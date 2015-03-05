@@ -14,7 +14,9 @@ export HADOOP_CLASSPATH=conf/sqoop-site.xml
 export HADOOP_HOME=/usr/lib/hadoop
 export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce
 export LIBJARS=${SQOOP_HOME}/*:${SQOOP_HOME}/lib/*
-export JAR_CLASSPATH=${LIBJARS}:${HADOOP_HOME}/*:${HADOOP_HOME}/lib/*:${SQOOP_SERVICE_JAR}
+
+#put sqoop_service_jar first otherwise slick spits alot of debug crap out. Picks the log level up from zookeeper.
+export JAR_CLASSPATH=${SQOOP_SERVICE_JAR}:${LIBJARS}:${HADOOP_HOME}/*:${HADOOP_HOME}/lib/*
 
 
 if [[ "${type}" == "create" || "${type}" == "exec" ]]
