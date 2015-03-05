@@ -71,3 +71,7 @@ Maybe Akka to run the jobs? Overkill maybe.
 ## Schema Evolution
 
 Use Kite SDK to take text files, extract schema, merge schema with target dataset and write text to avro/parquet dataset.
+
+#TODO
+
+Install
