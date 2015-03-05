@@ -1,5 +1,6 @@
 package com.datamountaineer.sqoop.sqoop
 
+import java.io.IOException
 import java.sql.{Connection, DriverManager, ResultSet}
 
 import com.datamountaineer.sqoop.models.JobMetaStorage
@@ -102,7 +103,7 @@ object initialiser {
           conn
         } catch {
           case e: Exception  => {
-            println("ERROR: Driver not available: " + e.getMessage)
+            log.error(e.getMessage, new IOException)
             throw e
           }
         }
