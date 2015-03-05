@@ -134,13 +134,14 @@ class JobMetaStorage extends JobStorage {
     }
   }
 
-  def write_job(job_name: String, job_type: String) = {
+  def write_job(job_name: String, job_type: String, enabled : Boolean) = {
     val job = conn_jobs.create(SqoopJob(
                 job_type = job_type,
                 job_name = job_name,
                 server = job_name.split(":")(1),
                 database = job_name.split(":")(2),
-                table_name = job_name.split(":")(3))
+                table_name = job_name.split(":")(3),
+                enabled = enabled)
               )
 
     job match {
@@ -213,7 +214,7 @@ class JobMetaStorage extends JobStorage {
     //check  if jobs exists (second parameter of job).
     job._2 match {
       case false =>
-        write_job(job_name = job_name, job_type = tool_name)
+        write_job(job_name = job_name, job_type = tool_name, enabled = true)
       case true => log.info("Found job %s. Updating metastore.".format(job_name))
     }
     write_props(action="update", job_id=job._1, job_name = job_name, tool_name = tool_name, sqoop_options = sqoop_options)
@@ -223,11 +224,13 @@ class JobMetaStorage extends JobStorage {
   //own implementation
   def create(job_name: String,  sqoop_options: SqoopOptions) = {
     val job : Pair[Long, Boolean]= check_if_exists(job_name = job_name)
+    //if we don't have split by column disable the job. Might need a rethink at some point but initialiser to be improved
+    val enable : Boolean = if (sqoop_options.getSplitByCol.isEmpty) false else true
 
     job._2 match {
       //no job found
       case false =>
-        write_job(job_name = job_name, job_type = "import")
+        write_job(job_name = job_name, job_type = "import", enabled = enable)
         val job = check_if_exists(job_name)
         //did we persists the job ok?
         job._2 match {

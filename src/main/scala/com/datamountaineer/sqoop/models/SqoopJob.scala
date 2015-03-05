@@ -9,7 +9,8 @@ case class SqoopJob(id: Option[Long] = None,
                     job_name: String,
                     server: String,
                     database: String,
-                    table_name: String)
+                    table_name: String,
+                    enabled: Boolean = true )
 
 //object SqoopJobJsonProtocol extends DefaultJsonProtocol {
 //  implicit val sqoopJobConfig = jsonFormat7(SqoopJob)
@@ -22,9 +23,10 @@ object SqoopJobs extends Table[SqoopJob]("sqoop_jobs") {
   def server = column[String]("server")
   def database = column[String]("database")
   def table_name = column[String]("table_name")
+  def enabled = column[Boolean]("enabled")
 
   def idx = index("idx__job_name", job_name, unique = true)
-  def * = id.? ~ job_type ~ job_name ~ server ~ database ~ table_name <> (SqoopJob, SqoopJob.unapply _)
+  def * = id.? ~ job_type ~ job_name ~ server ~ database ~ table_name ~ enabled <> (SqoopJob, SqoopJob.unapply _)
 
   implicit val dateTypeMapper = MappedTypeMapper.base[java.util.Date, java.sql.Date](
   {
