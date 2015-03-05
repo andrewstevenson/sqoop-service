@@ -1,6 +1,11 @@
 *.class
 *.log
 
+
+.idea/
+sqoop-service*.tar.gz
+
+
 # sbt specific
 .cache/
 .history/
