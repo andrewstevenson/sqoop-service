@@ -17,9 +17,9 @@ By using a shared metastore we can sort of have a Sqoop2 but by using Sqoop 1 we
 
 This component extends the org.apache.sqoop.metastore.JobStorage to allow creation and execution of jobs via the SqoopTool interface. It uses slickDb to handle the interface with MYSQL. MYSQL can be swapped out for another db.
 
-Using MySQL, Postgres or Oracle means in corporate world that back up and admin is taken care of.
+Some orgnaisations only support MySQL, Oracle or Sql Server. This often gives the additional benefit of support for these RDBMS and backups. Also there's more and more RDBMS backing Hadoop services suchs as Hive, Oozie, Sentry and Cloudera Management Services, so consolidating makes senses rather then adding additional embedded database.
 
-Since I want to expose viewing, creating an changing jobs via a web gui via spray I want to be in control of the metastore definitions, hence I extend JobStorage.
+Since I want to expose viewing, creating an changing jobs via Spray and AngualarJS I want to be in control of the metastore definitions, hence I extend JobStorage.
 
 You can also interact with via the Sqoop CLI. For this to work you need to set the `sqoop.job.storage.implementations` properties in the sqoop-site.xml and add it to the HADOOP_CLASSPATH.
 
