@@ -72,6 +72,49 @@ Maybe Akka to run the jobs? Overkill maybe.
 
 Use Kite SDK to take text files, extract schema, merge schema with target dataset and write text to avro/parquet dataset.
 
+#Install
+
+To build
+
+```
+sbt assembly
+```
+
+This will build a jar in target/scala-2.10. I've set dependencies to be provided to keep the size down. They should be on your hadoop cluster anyway.
+
+To deploy to your sqoop gateway machines I wrote a quick deploy script. Once jenkins or teamcity has built the jar call this script to tar and push the assembly, configs and runner scripts the sqoop gateway machine.
+
+```
+./post_deploy edge-node-01 <version> <app directory on target edge node>
+```
+
+#Usage
+
+The current setup accepts 3 run types:
+
+1. initialise - This run type initialises jobs for each table found in the target database. It attempts to select the best column to split on and defaults the import type to incremental based on the split. For MySQL an auto increment column is looked for. On Netezza the distribution key is checked. It's important to note this is a best guess. If a suitable column is not found the job is tagged a disabled.
+
+To run the initialiser to pre-populate the jobs run `sqoop-runner.sh run_type db_type server database`. For example against a mysql run
+
+```
+bin/sqoop-runner.sh initialise mysql mysql-server target_database
+```
+
+2. create - This run type creates a job. It expects a `:` separated list of parameters in the form db_type:server:database:tablename:split_by_col:num_mappers:check_col:last_val
+
+ The resulting job name will be db_type:server:database:tablename.
+
+ ```
+ bin/sqoop-runner.sh create mysql:localhost:my_db:my_table:my_auto_incr_col:4:my_auto_incr_col:0
+ ```
+
+3. exec - This run type executes the job given as a parameter.
+
+```
+bin/sqoop-runner.sh exec mysql:localhost:my_db:my_table
+```
+
 #TODO
 
-Install
+Make target dir configurable.
+Test...maybe:-)
