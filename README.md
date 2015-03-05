@@ -20,8 +20,34 @@ This component extends the org.apache.sqoop.metastore.JobStorage to allow creati
 Using MySQL, Postgres or Oracle means in corporate world that back up and admin is taken care of.
 
 Since I want to expose viewing, creating an changing jobs via a web gui via spray I want to be in control of the metastore definitions, hence I extend JobStorage rather than update the sqoop-site.xml to point at MySQL.
-
-
+```xml
+<configuration>
+ <property>
+          <name>sqoop.metastore.client.enable.autoconnect</name>
+          <value>true</value>
+          <description>If true, Sqoop will connect to a local metastore
+              for job management when no other metastore arguments are
+              provided.
+          </description>
+      </property>
+      <property>
+          <name>sqoop.metastore.client.autoconnect.url</name>
+          <value>jdbc:mysql://localhost:3306/sqoop_metastore?createDatabaseIfNotExist=false</value>
+      </property>
+      <property>
+          <name>sqoop.metastore.client.autoconnect.username</name>
+          <value>sqoop</value>
+      </property>
+      <property>
+          <name>sqoop.metastore.client.autoconnect.password</name>
+          <value>sqoop</value>
+      </property>
+      <property>
+          <name>sqoop.job.storage.implementations</name>
+          <value>com.datamountaineer.sqoop.models.JobMetaStorage</value>
+      </property>
+  </configuration>
+```
 ## Spray Rest API
 
 Use Spray to expose the metastore.
