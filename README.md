@@ -1,7 +1,7 @@
 # Sqoop-Service
 Sqoop scala driver with mysql metastore, slick db and spray.
 
-Sqoop is an great tool for import and exporting data in and out of HDFS. Most sqoop jobs are via scripting which is OK for ad-hoc jobs but when you want to automate and put it in a continuous integration path sometimes you need a compiled language and the benefits this gives you.
+Sqoop is an great tool for importing and exporting data in and out of HDFS. Most sqoop jobs are via scripting which is OK for ad-hoc jobs but when you want to automate and put it in a continuous integration path sometimes you need a compiled language and the benefits this gives you.
 
 I choose scala to wrap my own code round the Java Sqoop code base. I simply extend the JobStorage class and use slick db to interact with a MySql database to store the job that Sqoop would normally store in the embedded HSQLDb.
 
@@ -12,6 +12,7 @@ By using a shared metastore we can sort of have a Sqoop2 but by using Sqoop 1 we
 3.  We have a central point for organisations to get and overview of the sqoop import/exports. Compliance and legal like this.
 4.  Each time a source database server or database is registered we can setup jobs and set smart defaults. For example choose the correct connectors if available, set compression, use avro or parquet rather than text.
 5.  Stop none supported configurations such Avro with direct mode. So use text with Lzop compression instead.
+6.  We can hook into Cloudera's Kite SDK to handle schema evolution.
 
 ##JobMetaStorage
 
