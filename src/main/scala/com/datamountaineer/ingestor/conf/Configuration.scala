@@ -1,4 +1,4 @@
-package com.datamountaineer.sqoop.conf
+package com.datamountaineer.ingestor.conf
 
 import com.typesafe.config.ConfigFactory
 

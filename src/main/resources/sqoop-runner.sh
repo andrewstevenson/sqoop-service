@@ -8,8 +8,8 @@ database=$4
 
 base=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-export INGESTOR_CLASS="com.datamountaineer.sqoop.sqoop.ingestor"
-export INITIALISER_CLASS="com.datamountaineer.sqoop.sqoop.initialiser"
+export INGESTOR_CLASS="com.datamountaineer.ingestor.ingestor"
+export INITIALISER_CLASS="com.datamountaineer.ingestor.sqoop.initialiser"
 export SQOOP_SERVICE_JAR=${base}/../sqoop-service-assembly-0.1.jar
 export SQOOP_HOME=/usr/lib/sqoop
 export HADOOP_CLASSPATH=${base}/conf/sqoop-site.xml

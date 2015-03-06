@@ -1,7 +1,8 @@
-package com.datamountaineer.sqoop.sqoop
+package com.datamountaineer.ingestor
 
 import com.cloudera.sqoop.SqoopOptions
-import com.datamountaineer.sqoop.models.JobMetaStorage
+import com.datamountaineer.ingestor.models.JobMetaStorage
+import com.datamountaineer.ingestor.sqoop.ingestSqoop
 import org.apache.hadoop.conf.{Configuration, Configured}
 import org.apache.hadoop.util.{Tool, ToolRunner}
 import org.apache.sqoop.tool.ImportTool
@@ -21,7 +22,7 @@ object ingestor extends Configured with Tool {
    * @param sqoop_options A SqoopOptions to store in the metastore. If run_type is create not used to can be null
    * @return None
    */
-  def process(job_name: String, run_type: String, sqoop_options: Option[SqoopOptions] = None) = {
+  def process_sqoop(job_name: String, run_type: String, sqoop_options: Option[SqoopOptions] = None) = {
     val storage = new JobMetaStorage
     run_type match {
       case "create" =>
@@ -53,7 +54,7 @@ object ingestor extends Configured with Tool {
 
     job_type match {
       case "sqoop:exec" =>
-        process(args(1).toString, "exec")
+        process_sqoop(args(1).toString, "exec")
         log.info(System.getenv("JAVA_HOME"))
 
         //            } else {
@@ -71,7 +72,7 @@ object ingestor extends Configured with Tool {
         val sqoop_options: SqoopOptions = new ingestSqoop(args(1).toString, true).build_sqoop_options()
         val job_name = args(1).split(":").take(4)mkString ":"
         log.info("Trying to create job called %s'.".format(job_name))
-        process(job_name, "create", Some(sqoop_options))
+        process_sqoop(job_name, "create", Some(sqoop_options))
       //log.info("Sqoop successful!")
       //              //1 . Call Kite SDK to extract the avro schema from the csv
       //              //2.  Open staging kitedataset, create if doesn't exist

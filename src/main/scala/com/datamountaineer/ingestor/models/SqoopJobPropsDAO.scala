@@ -1,15 +1,17 @@
-package com.datamountaineer.sqoop.models
+package com.datamountaineer.ingestor.models
 
 import java.sql._
 
-import com.datamountaineer.sqoop.conf.Configuration
-import com.datamountaineer.sqoop.rest.{Failure, FailureType}
+import com.datamountaineer.ingestor.conf.Configuration
+import com.datamountaineer.ingestor.rest.{Failure, FailureType}
+
+import scala.slick.jdbc.meta.MTable
+import scala.slick.session.Database
 
 import scala.slick.driver.MySQLDriver.simple.Database.threadLocalSession
 import scala.slick.driver.MySQLDriver.simple._
-import scala.slick.jdbc.meta.MTable
 
-class SqoopJobDAO extends Configuration {
+class SqoopJobPropsDAO extends Configuration {
 
   // init Database instance
   private val db = Database.forURL(url = "jdbc:%s://%s:%d/%s".format(dbType, dbHost, dbPort, dbDatabase),
@@ -17,8 +19,8 @@ class SqoopJobDAO extends Configuration {
 
   // create tables if not exist
   db.withSession {
-    if (MTable.getTables("sqoop_jobs").list().isEmpty) {
-      SqoopJobs.ddl.create
+    if (MTable.getTables("sqoop_job_props").list().isEmpty) {
+      SqoopJobProps.ddl.create
     }
   }
 
@@ -28,10 +30,10 @@ class SqoopJobDAO extends Configuration {
    * @param table table entity to
    * @return saved table entity
    */
-  def create(table: SqoopJob): Either[Failure, SqoopJob] = {
+  def create(table: SqoopJobProp): Either[Failure, SqoopJobProp] = {
     try {
       val id = db.withSession {
-        SqoopJobs returning SqoopJobs.id insert table
+        SqoopJobProps returning SqoopJobProps.id insert table
       }
       Right(table.copy(id = Some(id)))
     } catch {
@@ -47,10 +49,10 @@ class SqoopJobDAO extends Configuration {
    * @param table updated table entity
    * @return updated table entity
    */
-  def update(job_name: String, table: SqoopJob): Either[Failure, SqoopJob] = {
+  def update(job_name: String, table: SqoopJobProp): Either[Failure, SqoopJobProp] = {
     try
       db.withSession {
-        SqoopJobs.where(_.job_name === job_name) update table.copy(job_name = job_name) match {
+        SqoopJobProps.where(_.job_name === job_name) update table.copy(job_name = job_name) match {
           case 0 => Left(notFoundError(job_name))
           case _ => Right(table.copy(job_name = job_name))
         }
@@ -62,27 +64,33 @@ class SqoopJobDAO extends Configuration {
   }
 
   /**
-   * Deletes table from database.
+   * Deletes job_name props from database.
    *
    * @param job_name of the table to delete
    * @return deleted table entity
    */
-  def delete(job_name: String): Either[Failure, SqoopJob] = {
+  def delete(job_name: String): Int = {
     try {
       db.withTransaction {
-        val query = SqoopJobs.where(_.job_name === job_name)
-        val table = query.run.asInstanceOf[List[SqoopJob]]
-        table.size match {
-          case 0 =>
-            Left(notFoundError(job_name))
-          case _ =>
+        val query = SqoopJobProps.where(_.job_name === job_name)
             query.delete
-            Right(table.head)
-        }
       }
-    } catch {
-      case e: SQLException =>
-        Left(databaseError(e))
+    }
+  }
+
+  /**
+   * Deletes prop_name from database.
+   *
+   * @param job_name of the job to delete
+   * @param prop_name of the property to delete
+   * @return deleted table entity
+   */
+  def delete(job_name: String, prop_name: String): Int = {
+    try {
+      db.withTransaction {
+        val query = SqoopJobProps.where(p => p.job_name === job_name && p.prop_name === prop_name)
+        query.delete
+      }
     }
   }
 
@@ -92,11 +100,11 @@ class SqoopJobDAO extends Configuration {
    * @param job_name of the table to retrieve
    * @return  entity with specified findByJobName
    */
-  def get(job_name: String): Either[Failure, SqoopJob] = {
+  def get(job_name: String): Either[Failure, SqoopJobProp] = {
     try {
       db.withSession {
-        SqoopJobs.findByJobName(job_name).firstOption match {
-          case Some(table: SqoopJob) =>
+        SqoopJobProps.findByJobName(job_name).firstOption match {
+          case Some(table: SqoopJobProp) =>
             Right(table)
           case _ =>
             Left(notFoundError(job_name))
@@ -114,16 +122,14 @@ class SqoopJobDAO extends Configuration {
    * @param params search parameters
    * @return list of tables that match given parameters
    */
-  def search(params: SqoopJobSearchParameters): Either[Failure, List[SqoopJob]] = {
+  def search(params: SqoopJobPropParameters): Either[Failure, List[SqoopJobProp]] = {
     try {
       db.withSession {
         val query = for {
-          table <- SqoopJobs if {
+          table <- SqoopJobProps if {
           Seq(
             params.job_name.map(table.job_name is _),
-            params.server.map(table.server is _),
-            params.database.map(table.database is _),
-            params.table.map(table.table_name is _)
+            params.prop_name.map(table.prop_name is _)
           ).flatten match {
             case Nil => ConstColumn.TRUE
             case seq => seq.reduce(_ && _)

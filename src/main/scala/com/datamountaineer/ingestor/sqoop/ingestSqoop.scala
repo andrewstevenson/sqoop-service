@@ -1,9 +1,10 @@
-package com.datamountaineer.sqoop.sqoop
+package com.datamountaineer.ingestor.sqoop
 
 import com.cloudera.sqoop.SqoopOptions
 import com.cloudera.sqoop.SqoopOptions.{FileLayout, IncrementalMode}
-import com.datamountaineer.sqoop.conf.Configuration
+import com.datamountaineer.ingestor.conf.Configuration
 import org.slf4j.LoggerFactory
+import com.datamountaineer.ingestor.utils.Constants
 
 
 class ingestSqoop(input: String, incr: Boolean) extends Configuration {

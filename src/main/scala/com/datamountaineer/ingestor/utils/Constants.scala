@@ -1,4 +1,4 @@
-package com.datamountaineer.sqoop.sqoop
+package com.datamountaineer.ingestor.utils
 
 object Constants {
   val DB_TYPE_KEY : String = "db_type"

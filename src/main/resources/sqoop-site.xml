@@ -22,6 +22,6 @@
     </property>
     <property>
         <name>sqoop.job.storage.implementations</name>
-        <value>com.datamountaineer.sqoop.models.JobMetaStorage</value>
+        <value>com.datamountaineer.ingestor.models.JobMetaStorage</value>
     </property>
 </configuration>

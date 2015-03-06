@@ -1,4 +1,4 @@
-package com.datamountaineer.sqoop.models
+package com.datamountaineer.ingestor.models
 
 case class SqoopJobSearchParameters( job_name: Option[String] = None,
                                   table: Option[String] = None,

@@ -1,4 +1,4 @@
-package com.datamountaineer.sqoop.rest
+package com.datamountaineer.ingestor.rest
 
 import spray.http.{StatusCodes, StatusCode}
 

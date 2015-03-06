@@ -1,4 +1,4 @@
-package com.datamountaineer.sqoop.models
+package com.datamountaineer.ingestor.models
 
 import scala.slick.driver.MySQLDriver.simple._
 

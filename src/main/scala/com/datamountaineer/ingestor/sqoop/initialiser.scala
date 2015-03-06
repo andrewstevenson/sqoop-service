@@ -1,9 +1,9 @@
-package com.datamountaineer.sqoop.sqoop
+package com.datamountaineer.ingestor.sqoop
 
 import java.io.IOException
 import java.sql.{Connection, DriverManager, ResultSet}
 
-import com.datamountaineer.sqoop.models.JobMetaStorage
+import com.datamountaineer.ingestor.models.JobMetaStorage
 import org.slf4j.LoggerFactory
 
 object initialiser {
