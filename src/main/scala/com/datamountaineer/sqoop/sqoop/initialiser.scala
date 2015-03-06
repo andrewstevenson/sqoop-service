@@ -8,8 +8,11 @@ import org.slf4j.LoggerFactory
 
 object initialiser {
   val log = LoggerFactory.getLogger("initialiser")
-  //mysql:localhost:my_sqoop_test
-  val job_name_format = "%s:%s:%s:%s"
+
+  /*
+  * WHAT TO REPLACE THIS WITH SLICK!!!!!!
+  *
+  * */
   val mysql_query = "SELECT DISTINCT " +
     "t.table_name " +
     ", CONCAT_WS(':'" +
@@ -57,13 +60,12 @@ object initialiser {
       val query = get_query(db_type).replace("MY_DATABASE", database).replace("MY_SERVER", server)
       val rs: ResultSet = stmt.executeQuery(query)
       while (rs.next()) {
-        val table = rs.getString("table_name")
         val input = rs.getString("input")
         //create sqoop options
         val sqoop_options = new ingestSqoop(input, true).build_sqoop_options()
         //call ingestor to create the
         val storage = new JobMetaStorage
-        storage.create(job_name_format.format(db_type, server, database, table), sqoop_options)
+        storage.create(sqoop_options)
       }
     }
     finally {

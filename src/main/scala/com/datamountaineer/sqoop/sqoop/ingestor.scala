@@ -25,7 +25,7 @@ object ingestor extends Configured with Tool {
     val storage = new JobMetaStorage
     run_type match {
       case "create" =>
-        storage.create(job_name, sqoop_options.asInstanceOf[SqoopOptions])
+        storage.create(sqoop_options.asInstanceOf[SqoopOptions])
       case "exec" =>
         //read back our sqoop jobs to create a sqoop options
         val stored_job_options = storage.read(job_name).getSqoopOptions
@@ -94,21 +94,4 @@ object ingestor extends Configured with Tool {
     }
     res
   }
-
-//
-//  def get_cluster_hosts(cluster_config: String): Map[String, String] = {
-//    val cluster_servers: Array[String] = cluster_config.split(":")
-//
-//    if (cluster_servers.length != 3) {
-//      log.error("Expected 3 parameters for cluster servers. oozie_server:hdfs_name_space:yarn_namespace",
-//        new ArrayIndexOutOfBoundsException)
-//    }
-//
-//    val oozie_server: String = cluster_servers(0)
-//    val hdfs_name_service: String = cluster_servers(1)
-//    val yarn_name_service: String = cluster_servers(2)
-//    Map("oozie_server" -> oozie_server,
-//      "hdfs_name_service" -> hdfs_name_service,
-//      "yarn_name_service" -> yarn_name_service)
-//  }
 }

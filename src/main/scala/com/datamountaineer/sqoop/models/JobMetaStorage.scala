@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory
 //import org.apache.commons.logging.{Log, LogFactory}
 import org.apache.hadoop.conf.Configuration
 
-
 import scala.collection.JavaConversions._
 import scala.util.{Left, Right}
 
@@ -252,7 +251,7 @@ class JobMetaStorage extends JobStorage {
    * @param sqoop_options The SqoopOptions for the job.
    * */
   def get_job_name(sqoop_options: SqoopOptions) : String = {
-    sqoop_options.getConnectString.replace("jdbc:", "").replace("/", ":") + ":" + sqoop_options.getTableName
+    sqoop_options.getConnectString.replace("jdbc:", "").replace("://", ":").replace("/", ":") + ":" + sqoop_options.getTableName
   }
 
   /**
@@ -277,7 +276,7 @@ class JobMetaStorage extends JobStorage {
     }
 
     //messy checking job again
-    val new_job: Pair[Long, Boolean] = check_if_exists(job_name: String)
+    val new_job: Pair[Long, Boolean] = check_if_exists(new_job_name: String)
     val job_id = if (new_job._2) new_job._1 else -1
     write_props(job_id=job_id, job_name = new_job_name, tool_name = tool_name, sqoop_options = sqoop_options)
   }
@@ -286,16 +285,15 @@ class JobMetaStorage extends JobStorage {
   /**
    * Store a sqoop job in the metastore
    * 
-   * @param job_name The name of the job to create
-   * @param sqoop_options The SqoopOptions to persist to sqoop_job_props                
+   * @param sqoop_options The SqoopOptions to persist to sqoop_job_props
    * */
   @throws(classOf[IOException])
   //own implementation
-  def create(job_name: String,  sqoop_options: SqoopOptions) = {
-    val job : Pair[Long, Boolean]= check_if_exists(job_name = job_name)
+  def create(sqoop_options: SqoopOptions) = {
+    val new_job_name = get_job_name(sqoop_options)
+    val job : Pair[Long, Boolean]= check_if_exists(job_name = new_job_name)
     //if we don't have split by column disable the job. Might need a rethink at some point but initialiser to be improved
     val enable : Boolean = if (sqoop_options.getSplitByCol.isEmpty) false else true
-    val new_job_name = get_job_name(sqoop_options)
 
     job._2 match {
       //no job found
@@ -304,7 +302,7 @@ class JobMetaStorage extends JobStorage {
         val job = check_if_exists(new_job_name)
         //did we persists the job ok?
         job._2 match {
-          case true => write_props(job_id=job._1, job_name = new_job_name, tool_name = "job", sqoop_options = sqoop_options)
+          case true => write_props(job_id=job._1, job_name = new_job_name, tool_name = "import", sqoop_options = sqoop_options)
           case false => log.error("Job %s does not exists!".format(new_job_name), new IOException)
         }
         log.info("Job %s created".format(new_job_name))

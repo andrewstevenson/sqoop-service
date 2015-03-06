@@ -15,11 +15,10 @@ export SQOOP_HOME=/usr/lib/sqoop
 export HADOOP_CLASSPATH=${base}/conf/sqoop-site.xml
 export HADOOP_HOME=/usr/lib/hadoop
 export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce
-export LIBJARS=${SQOOP_HOME}/*:${SQOOP_HOME}/lib/*
-export JAR_CLASSPATH=${SQOOP_SERVICE_JAR}:${LIBJARS}:${HADOOP_HOME}/*:${HADOOP_HOME}/lib/*
+export LIBJARS=${SQOOP_HOME}/*
+export JAR_CLASSPATH=${base}/../conf/:${base}/../lib/*:${base}/../*:${LIBJARS}:${HADOOP_HOME}/*:${HADOOP_HOME}/lib/*
 
-JAVA_OPTS_CONF=-Dconfig.file=${base}/../conf/application.conf
-JAVA_OPTS_LOG=-Dlogger.resource=${base}../conf/logback.xml
+#JAVA_OPTS_CONF=-Dconfig.file=${base}/../conf/application.conf
 
 if [[ "${type}" == "create" || "${type}" == "exec" ]]
 then
@@ -28,5 +27,6 @@ then
  elif [[ "${type}" == "initialise" ]]
  then
     echo "Initialising ${server}/${database}"
-    java ${JAVA_OPTS_CONF} ${JAVA_OPTS_LOG} -cp ${JAR_CLASSPATH} ${INITIALISER_CLASS} ${db_type} ${server} ${database}
+    #java ${JAVA_OPTS_CONF}
+    java -cp ${JAR_CLASSPATH} ${INITIALISER_CLASS} ${db_type} ${server} ${database}
  fi

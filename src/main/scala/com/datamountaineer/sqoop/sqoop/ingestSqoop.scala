@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory
 
 class ingestSqoop( input: String, incr: Boolean) {
   val log = LoggerFactory.getLogger(classOf[ingestSqoop])
-  
   val params : Map[String, String] = extract_sqoop_params(input, incr)
 
   private val db_type: String = params.get("db_type").get
