@@ -130,4 +130,4 @@ bin/sqoop-runner.sh exec mysql:localhost:my_db:my_table
 #TODO
 
 Make target dir configurable.
-Test...maybe:-)
+Tests
