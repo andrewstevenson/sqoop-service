@@ -95,6 +95,8 @@ E.g.
 
 #Usage
 
+NOTE: The sqoop username is set to `sqoop`. I'll make this configurable later.
+
 The current setup accepts 3 run types:
 
 1.initialise
