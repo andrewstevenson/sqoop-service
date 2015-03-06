@@ -42,7 +42,12 @@ class JobMetaStorage extends JobStorage {
   def open(descriptor: util.Map[String, String]) {
   }
 
-  //used by sqoop to get the job
+  /**
+   * Read back a SqoopOptions from the metastore
+   *
+   * @param job_name The name of the job to look up in sqoop_job_props
+   * @return A JobData with the SqoopOptions from the metastore
+   * */
   @throws(classOf[IOException])
   def read(job_name: String): JobData = {
 
@@ -107,10 +112,24 @@ class JobMetaStorage extends JobStorage {
     }
   }
 
+  /**
+   * delete a job
+   * 
+   * @param job_name The name of the job to delete
+   * */
   @throws(classOf[IOException])
-  def delete(jobName: String) {
+  def delete(job_name: String): Unit = {
+    conn_props.delete(job_name)
+    conn_jobs.delete(job_name)
   }
 
+  
+  /**
+   * Write a sqoop option
+   * 
+   * @param job_name Job name to write the property for
+   * @param prop A SqoopJobProp to write.                
+   * */
   def write_job_property(job_name: String, prop: SqoopJobProp) = {
     val prop_name = prop.prop_name
     val props = conn_props.search(SqoopJobPropParameters(job_name = Some(job_name), prop_name = Some(prop_name)))
@@ -123,6 +142,12 @@ class JobMetaStorage extends JobStorage {
     conn_props.create(prop)
   }
   
+  /**
+   * Checks if a given jobs exists.
+   * 
+   * @param job_name The job name to check for in sqoop_jobs
+   * @return A pair consisting of the job_id and a bool to indicate if it exists                
+   * */
   def check_if_exists(job_name: String) : Pair[Long, Boolean] = {
     //check if jobs exists
     val job = conn_jobs.get(job_name)
@@ -134,6 +159,14 @@ class JobMetaStorage extends JobStorage {
     }
   }
 
+  /**
+   * Write a job to sqoop_jobs
+   * 
+   * @param job_name The name of the job
+   * @param job_type The type of job (import)
+   * @param enabled Flag indicating is the job is enabled                
+   * 
+   * */
   def write_job(job_name: String, job_type: String, enabled : Boolean) = {
     val job = conn_jobs.create(SqoopJob(
                 job_type = job_type,
@@ -152,7 +185,15 @@ class JobMetaStorage extends JobStorage {
     }
   }
   
-  def write_props(action: String,job_id: Long, job_name: String, tool_name: String, sqoop_options: SqoopOptions) = {
+  /**
+   * Write the SqoopOption properties to sqoop_job_props
+   * 
+   * @param job_id The job_id of an existing job entry in sqoop_jobs
+   * @param job_name The job name
+   * @param tool_name The name of the sqoop tool (import)                
+   * @param sqoop_options The SqoopOptions to persist.
+   * */
+  def write_props(job_id: Long, job_name: String, tool_name: String, sqoop_options: SqoopOptions) = {
     //save name of tool
     write_job_property(
       job_name=job_name,
@@ -204,54 +245,92 @@ class JobMetaStorage extends JobStorage {
     }
   }
 
-  //called by Sqoop when updating the job!
+
+  /**
+   * Returns the job name used to identify the job. Built from connection string
+   * 
+   * @param sqoop_options The SqoopOptions for the job.
+   * */
+  def get_job_name(sqoop_options: SqoopOptions) : String = {
+    sqoop_options.getConnectString.replace("jdbc:", "").replace("/", ":") + ":" + sqoop_options.getTableName
+  }
+
+  /**
+   * Store a sqoop job in the metastore. Called by Sqoop when updating the job!
+   *
+   * @param job_name The name of the job to create
+   * @param data The JobData containing the SqoopOptions to persist to sqoop_job_props                
+   * */
+  
   @throws(classOf[IOException])
   def create(job_name: String,  data: JobData): Unit = {
     val sqoop_options = data.getSqoopOptions
     val tool_name = data.getSqoopTool.getToolName
     val job: Pair[Long, Boolean] = check_if_exists(job_name: String)
+    val new_job_name = get_job_name(sqoop_options)
 
     //check  if jobs exists (second parameter of job).
     job._2 match {
       case false =>
-        write_job(job_name = job_name, job_type = tool_name, enabled = true)
+        write_job(job_name = new_job_name, job_type = tool_name, enabled = true)
       case true => log.info("Found job %s. Updating metastore.".format(job_name))
     }
-    write_props(action="update", job_id=job._1, job_name = job_name, tool_name = tool_name, sqoop_options = sqoop_options)
+
+    //messy checking job again
+    val new_job: Pair[Long, Boolean] = check_if_exists(job_name: String)
+    val job_id = if (new_job._2) new_job._1 else -1
+    write_props(job_id=job_id, job_name = new_job_name, tool_name = tool_name, sqoop_options = sqoop_options)
   }
 
+
+  /**
+   * Store a sqoop job in the metastore
+   * 
+   * @param job_name The name of the job to create
+   * @param sqoop_options The SqoopOptions to persist to sqoop_job_props                
+   * */
   @throws(classOf[IOException])
   //own implementation
   def create(job_name: String,  sqoop_options: SqoopOptions) = {
     val job : Pair[Long, Boolean]= check_if_exists(job_name = job_name)
     //if we don't have split by column disable the job. Might need a rethink at some point but initialiser to be improved
     val enable : Boolean = if (sqoop_options.getSplitByCol.isEmpty) false else true
+    val new_job_name = get_job_name(sqoop_options)
 
     job._2 match {
       //no job found
       case false =>
-        write_job(job_name = job_name, job_type = "import", enabled = enable)
-        val job = check_if_exists(job_name)
+        write_job(job_name = new_job_name, job_type = "import", enabled = enable)
+        val job = check_if_exists(new_job_name)
         //did we persists the job ok?
         job._2 match {
-          case true => write_props(action="create", job_id=job._1, job_name = job_name, tool_name = "job", sqoop_options = sqoop_options)
-          case false => log.error("Job %s does not exists!".format(job_name), new IOException)
+          case true => write_props(job_id=job._1, job_name = new_job_name, tool_name = "job", sqoop_options = sqoop_options)
+          case false => log.error("Job %s does not exists!".format(new_job_name), new IOException)
         }
-        log.info("Job %s created".format(job_name))
+        log.info("Job %s created".format(new_job_name))
       case true =>
-        log.info("Job %s already exists!".format(job_name))
+        log.info("Job %s already exists!".format(new_job_name))
     }
   }
 
+  /**
+   * Updates a given job
+   * @param job_name The name of the job to update
+   * @param data The JobData to update the job with
+   * */
   @throws(classOf[IOException])
   def update(job_name: String, data: JobData): Unit = {
-    check_if_exists(job_name: String)._2 match {
+    val job =  check_if_exists(job_name: String)
+    job._2 match {
       case false => log.error("Job %s does not exist!".format(job_name))
       case true =>
         create(job_name=job_name, data = data)
     }
   }
 
+  /**
+   * Returns a list of jobs store in the metastore
+   * */
   @throws(classOf[IOException])
   def list() : util.List[String] = {
     val jobs = conn_jobs.search(new SqoopJobSearchParameters())

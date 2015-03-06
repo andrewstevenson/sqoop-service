@@ -104,8 +104,7 @@ object initialiser {
         } catch {
           case e: Exception  => {
             log.error(e.getMessage, new IOException)
-            throw e
-          }
+            throw e          }
         }
       case "netezza" =>
         classOf[org.netezza.Driver].newInstance()

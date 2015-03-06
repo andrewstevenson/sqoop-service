@@ -18,5 +18,6 @@ cp lib/*.jar sqoop-service-${version}/lib
 cp target/scala-2.10/sqoop-service-assembly-${version}.jar sqoop-service-${version}
 tar -zcvf sqoop-service-${version}.tar.gz sqoop-service-${version}
 scp sqoop-service-${version}.tar.gz cloudera@${target_server}:/${target_dir}
-ssh cloudera@${target_server} "rm -f -r ${target_dir}/sqoop-service-${version};tar -zxvf ${target_dir}/sqoop-service-${version}.tar.gz"
+ssh cloudera@${target_server} "rm -f -r ${target_dir}/sqoop-service-${version};
+tar -zxvf ${target_dir}/sqoop-service-${version}.tar.gz"
 

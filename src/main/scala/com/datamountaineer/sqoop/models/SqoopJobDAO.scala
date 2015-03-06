@@ -12,6 +12,8 @@ import scala.slick.jdbc.meta.MTable
 class SqoopJobDAO extends Configuration {
 
   // init Database instance
+  println(dbType)
+
   private val db = Database.forURL(url = "jdbc:%s://%s:%d/%s".format(dbType, dbHost, dbPort, dbDatabase),
     user = dbUser, password = dbPassword, driver = dbDriver)
 
