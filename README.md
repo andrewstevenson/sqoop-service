@@ -112,7 +112,7 @@ bin/sqoop-runner.sh initialise mysql mysql-server target_database
  bin/sqoop-runner.sh create mysql:localhost:my_db:my_table:my_auto_incr_col:4:my_auto_incr_col:0
  ```
 
-3. exec
+3.exec
 
 This run type executes the job given as a parameter.
 
