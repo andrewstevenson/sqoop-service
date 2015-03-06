@@ -69,7 +69,6 @@ class ingestSqoop( input: String, incr: Boolean) {
       sqoop_options.getTableName + "/run_date=" +
       new SimpleDateFormat("YYYYMMdd").format(Calendar.getInstance().getTime))
     sqoop_options.setEscapedBy('\\')
-    sqoop_options.setHiveDropDelims(true)
 
     //avro/parquet not supported for netzza and teradata
     if (this.db_type == "netezza" ||
@@ -82,6 +81,7 @@ class ingestSqoop( input: String, incr: Boolean) {
       //sqoop_options.setCompressionCodec("com.hadoop.compression.lzo.LzopCodec")
     }
     else {
+      sqoop_options.setHiveDropDelims(true)
       sqoop_options.setFileLayout(FileLayout.AvroDataFile)
       sqoop_options.setCompressionCodec("org.apache.hadoop.io.compress.SnappyCodec")
     }
