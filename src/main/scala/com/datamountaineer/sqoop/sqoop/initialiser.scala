@@ -104,9 +104,9 @@ object initialiser {
           val conn = DriverManager.getConnection(conn_str, mysql_username, mysql_password)
           conn
         } catch {
-          case e: Exception  => {
+          case e: Exception  =>
             log.error(e.getMessage, new IOException)
-            throw e          }
+            throw e
         }
       case "netezza" =>
         classOf[org.netezza.Driver].newInstance()

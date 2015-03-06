@@ -1,3 +1,4 @@
+<!--suppress ALL -->
 <configuration>
     <property>
         <name>sqoop.metastore.client.enable.autoconnect</name>

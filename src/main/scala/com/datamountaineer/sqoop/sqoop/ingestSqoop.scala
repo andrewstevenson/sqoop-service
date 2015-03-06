@@ -1,32 +1,30 @@
 package com.datamountaineer.sqoop.sqoop
 
-import java.text.SimpleDateFormat
-import java.util.Calendar
-
 import com.cloudera.sqoop.SqoopOptions
 import com.cloudera.sqoop.SqoopOptions.{FileLayout, IncrementalMode}
+import com.datamountaineer.sqoop.conf.Configuration
 import org.slf4j.LoggerFactory
 
 
-class ingestSqoop( input: String, incr: Boolean) {
+class ingestSqoop(input: String, incr: Boolean) extends Configuration {
   val log = LoggerFactory.getLogger(classOf[ingestSqoop])
-  val params : Map[String, String] = extract_sqoop_params(input, incr)
+  val params: Map[String, String] = extract_sqoop_params(input, incr)
 
-  private val db_type: String = params.get("db_type").get
-  private val server: String = params.get("server").get
-  private val database: String = params.get("database").get
-  private val table_name: String = params.get("table").get
-  private val split_by: String = params.get("split_by").get
-  private val mappers: Integer = params.get("mappers").get.toInt
+  private val db_type: String = params.get(Constants.DB_TYPE_KEY).get
+  private val server: String = params.get(Constants.SERVER_KEY).get
+  private val database: String = params.get(Constants.DATABASE_KEY).get
+  private val table_name: String = params.get(Constants.TABLE_KEY).get
+  private val split_by: String = params.get(Constants.SPLIT_BY_KEY).get
+  private val mappers: Integer = params.get(Constants.MAPPERS_KEY).get.toInt
 
   /**
    * Even a input string, split by : to create a map with parameters to create a SqoopOptions
    * @param input Input string to parse
    * @param incr  Boolean flag to specify if it's an increment import
    * @return A map of parameters to pass to SqoopOptions
-   * */
+   **/
   def extract_sqoop_params(input: String, incr: Boolean = false): Map[String, String] = {
-    val params = input.split(":")
+    val params = input.split(Constants.SPILT_DELIMITER)
 
     if (incr && params.length != 8) {
       log.error("Expected 8 parameters for incremental imports. " +
@@ -38,44 +36,51 @@ class ingestSqoop( input: String, incr: Boolean) {
     val last_val = if (incr) params(7) else ""
 
     Map(
-      "db_type" -> params(0),
-      "server" -> params(1),
-      "database" -> params(2),
-      "table" -> params(3),
-      "split_by" -> params(4),
-      "mappers" -> params(5),
-      "check_col" -> check_col,
-      "last_value" -> last_val
+      Constants.DB_TYPE_KEY -> params(0),
+      Constants.SERVER_KEY -> params(1),
+      Constants.DATABASE_KEY -> params(2),
+      Constants.TABLE_KEY -> params(3),
+      Constants.SPLIT_BY_KEY -> params(4),
+      Constants.MAPPERS_KEY -> params(5),
+      Constants.CHECK_BY_KEY -> check_col,
+      Constants.LAST_VAL_KEY -> last_val
     )
   }
 
-  def build_sqoop_options() : SqoopOptions = {
+  /**
+   * Return a SqoopOptions based on the input params
+   *
+   * @return A SqoopOptions
+   * */
+  def build_sqoop_options(): SqoopOptions = {
     val sqoop_options: SqoopOptions = new SqoopOptions()
-    sqoop_options.setJobName(db_type + ":" + server + ":" + database + ":" + table_name)
+    sqoop_options.setJobName(db_type + Constants.SPILT_DELIMITER + server + Constants.SPILT_DELIMITER + database +
+      Constants.SPILT_DELIMITER + table_name)
     sqoop_options.setConnectString("jdbc:" +
       this.db_type + "://" +
       this.server + "/" +
       this.database)
     sqoop_options.setTableName(this.table_name)
     sqoop_options.setIncrementalMode(IncrementalMode.AppendRows)
-    sqoop_options.setIncrementalTestColumn(params.get("check_col").get)
-    sqoop_options.setIncrementalLastValue(params.get("last_value").get)
+    sqoop_options.setIncrementalTestColumn(params.get(Constants.CHECK_BY_KEY).get)
+    sqoop_options.setIncrementalLastValue(params.get(Constants.LAST_VAL_KEY).get)
     sqoop_options.setAppendMode(true)
     sqoop_options.setSplitByCol(this.split_by)
     sqoop_options.setNumMappers(this.mappers)
-    sqoop_options.setTargetDir("/data/lz/" +
+    sqoop_options.setTargetDir(SqoopTargetDirPreFix + "/" +
       this.server + "/" +
       this.database + "/" +
-      sqoop_options.getTableName + "/run_date=" +
-      new SimpleDateFormat("YYYYMMdd").format(Calendar.getInstance().getTime))
+      sqoop_options.getTableName + "/run_date=YYYYMMDD")
+    //      +
+    //      new SimpleDateFormat("YYYYMMdd").format(Calendar.getInstance().getTime))
     sqoop_options.setEscapedBy('\\')
 
     //avro/parquet not supported for netzza and teradata
-    if (this.db_type == "netezza" ||
-        this.db_type == "oracle" ||
-        this.db_type == "teradata" ||
-        this.db_type == "sqlserver" ||
-        this.db_type == "mysql") {
+    if (this.db_type == Constants.NETEZZA ||
+      this.db_type == Constants.ORACLE ||
+      this.db_type == Constants.TERADATA ||
+      this.db_type == Constants.SQL_SERVER ||
+      this.db_type == Constants.MYSQL) {
       sqoop_options.setDirectMode(true)
       sqoop_options.setFileLayout(FileLayout.TextFile)
       //sqoop_options.setCompressionCodec("com.hadoop.compression.lzo.LzopCodec")
@@ -83,7 +88,7 @@ class ingestSqoop( input: String, incr: Boolean) {
     else {
       sqoop_options.setHiveDropDelims(true)
       sqoop_options.setFileLayout(FileLayout.AvroDataFile)
-      sqoop_options.setCompressionCodec("org.apache.hadoop.io.compress.SnappyCodec")
+      sqoop_options.setCompressionCodec(Constants.SNAPPY_CODEC)
     }
     sqoop_options.setUsername("sqoop")
     sqoop_options.setPasswordFilePath("/secure/" + server + "/" + database + ".conf")

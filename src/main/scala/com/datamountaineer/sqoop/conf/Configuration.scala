@@ -38,5 +38,7 @@ trait Configuration {
   lazy val dbDriver = Try(config.getString("db.driver")).toOption.orNull
 
   lazy val dbType = Try(config.getString("db.type")).toOption.orNull
+
+  lazy val SqoopTargetDirPreFix = Try(config.getString("sqoop.target_dir_prefix")).toOption.orNull
 }
 

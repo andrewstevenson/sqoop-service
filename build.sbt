@@ -19,24 +19,26 @@ libraryDependencies ++= {
   val typeSafeV = "1.2.1"
   val hadoopV = "2.6.0"
   val sqoopV = "1.4.5-cdh5.3.2"
-  val log4jV = "1.2.14"
   val mySqlV = "5.1.25"
+  val logbackV= "1.0.13"
   Seq(
     "org.apache.sqoop" % "sqoop" % sqoopV % "provided",
     "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided",
-    "org.slf4j" % "slf4j-api" % "1.7.5",
-    "org.slf4j" % "slf4j-simple" % "1.7.5",
-    "io.spray" % "spray-http" % sprayV,
-    "com.typesafe.slick" %% "slick" % slickV,
-    "com.typesafe" % "config" % typeSafeV,
-    "mysql" % "mysql-connector-java" % mySqlV % "provided"
-  )
+    "ch.qos.logback" % "logback-classic" % logbackV excludeAll ExclusionRule(organization = "org.slf4j"),
+    "io.spray" % "spray-http" % sprayV excludeAll ExclusionRule(organization = "org.slf4j"),
+    "com.typesafe.slick" %% "slick" % slickV excludeAll ExclusionRule(organization = "org.slf4j"),
+    "com.typesafe" % "config" % typeSafeV excludeAll ExclusionRule(organization = "org.slf4j"),
+    "mysql" % "mysql-connector-java" % mySqlV,
+    "org.scalatest" % "scalatest_2.10" % "2.2.4" % "test",
+    "org.mockito" % "mockito-core" % "1.8.5" % "test"
+  ).map(_.force())
 }
 
+// ~= { _.map(_.excludeAll(ExclusionRule(organization = "org.slf4j"))) }
 //sbt-revolver plugin allows restarting the application when files change (including angular files in the /app folder)
 //Just run sbt or activator with the command `~ re-start` instead of `run`
 //Revolver.settings
 
-unmanagedResourceDirectories in Compile <+= (baseDirectory)
+unmanagedResourceDirectories in Compile <+= baseDirectory
 
 excludeFilter in unmanagedResources := HiddenFileFilter || "node_modules*" || "project*" || "target*" || "sqoop-*" || "lib"
