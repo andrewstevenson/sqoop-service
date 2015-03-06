@@ -2,14 +2,11 @@ package com.datamountaineer.ingestor.sqoop
 
 import com.cloudera.sqoop.SqoopOptions
 import com.cloudera.sqoop.SqoopOptions.IncrementalMode
-import com.datamountaineer.ingestor.conf.Configuration
+import com.datamountaineer.ingestor.IngestorTest
 import com.datamountaineer.ingestor.utils.Constants
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
-
 import scala.collection.JavaConversions._
-
-abstract class IngestorTest extends FunSuite with Matchers with OptionValues with Inside with Inspectors with Configuration
 
 class IngestSqoopTest extends IngestorTest with BeforeAndAfter with MockitoSugar  {
   val MY_SQL: String = "mysql"
