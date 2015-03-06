@@ -85,7 +85,7 @@ class ingestSqoop( input: String, incr: Boolean) {
       sqoop_options.setFileLayout(FileLayout.AvroDataFile)
       sqoop_options.setCompressionCodec("org.apache.hadoop.io.compress.SnappyCodec")
     }
-    sqoop_options.setUsername("sqoop_" +  this.server)
+    sqoop_options.setUsername("sqoop")
     sqoop_options.setPasswordFilePath("/secure/" + server + "/" + database + ".conf")
     sqoop_options
   }
