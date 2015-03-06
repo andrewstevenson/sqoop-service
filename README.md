@@ -85,12 +85,12 @@ This will build a jar in target/scala-2.10. I've set dependencies to be provided
 To deploy to your sqoop gateway machines I wrote a quick deploy script. Once jenkins or teamcity has built the jar call this script to tar and push the assembly, configs and runner scripts the sqoop gateway machine.
 
 ```
-./post_deploy <server> <version> <app directory on target edge node>
+./deploy.sh <server> <version> <app directory on target edge node>
 ```
 E.g.
 
 ```
-./post_deploy prd-edge-01 0.1 /opt/datamountaineer/
+./deploy.sh prd-edge-01 0.1 /opt/datamountaineer/
 ```
 
 #Usage
