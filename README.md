@@ -20,7 +20,7 @@ This component extends the org.apache.sqoop.metastore.JobStorage to allow creati
 
 Some organisations only support MySQL, Oracle or Sql Server. This often gives the additional benefit of support for these RDBMS and backups. Also there are more and more RDBMS backing Hadoop services such as Hive, Oozie, Sentry and Cloudera Management Services, so consolidating makes senses rather then adding additional embedded database.
 
-Since I want to expose viewing, creating an changing jobs via Spray and AngualarJS I want to be in control of the metastore definitions, hence I extend JobStorage.
+Additionaly I want to expose viewing, creating an changing jobs via Spray and AngualarJS so I want to be in control of the metastore definitions, hence I extend JobStorage.
 
 You can also interact with via the Sqoop CLI. For this to work you need to set the `sqoop.job.storage.implementations` properties in the sqoop-site.xml and add it to the HADOOP_CLASSPATH.
 
@@ -92,7 +92,7 @@ To deploy to your sqoop gateway machines I wrote a quick deploy script. Once jen
 
 The current setup accepts 3 run types:
 
-1. initialise
+1.initialise
 
  This run type initialises jobs for each table found in the target database. It attempts to select the best column to split on and defaults the import type to incremental based on the split. For MySQL an auto increment column is looked for. On Netezza the distribution key is checked. It's important to note this is a best guess. If a suitable column is not found the job is tagged a disabled.
 
@@ -102,7 +102,7 @@ To run the initialiser to pre-populate the jobs run `sqoop-runner.sh run_type db
 bin/sqoop-runner.sh initialise mysql mysql-server target_database
 ```
 
-2. create
+2.create
 
  This run type creates a job. It expects a `:` separated list of parameters in the form db_type:server:database:tablename:split_by_col:num_mappers:check_col:last_val
 
