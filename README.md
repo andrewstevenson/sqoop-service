@@ -20,7 +20,7 @@ This component extends the org.apache.sqoop.metastore.JobStorage to allow creati
 
 Some organisations only support MySQL, Oracle or Sql Server. This often gives the additional benefit of support for these RDBMS and backups. Also there are more and more RDBMS backing Hadoop services such as Hive, Oozie, Sentry and Cloudera Management Services, so consolidating makes senses rather then adding additional embedded database.
 
-Since I want to expose viewing, creating an changing jobs via Spray and AngualarJS I want to be in control of the metastore definitions, hence I extend JobStorage.
+Additionaly I want to expose viewing, creating an changing jobs via Spray and AngualarJS so I want to be in control of the metastore definitions, hence I extend JobStorage.
 
 You can also interact with via the Sqoop CLI. For this to work you need to set the `sqoop.job.storage.implementations` properties in the sqoop-site.xml and add it to the HADOOP_CLASSPATH.
 
@@ -85,14 +85,21 @@ This will build a jar in target/scala-2.10. I've set dependencies to be provided
 To deploy to your sqoop gateway machines I wrote a quick deploy script. Once jenkins or teamcity has built the jar call this script to tar and push the assembly, configs and runner scripts the sqoop gateway machine.
 
 ```
-./post_deploy edge-node-01 <version> <app directory on target edge node>
+./deploy.sh <server> <version> <app directory on target edge node>
+```
+E.g.
+
+```
+./deploy.sh prd-edge-01 0.1 /opt/datamountaineer/
 ```
 
 #Usage
 
+NOTE: The sqoop username is set to `sqoop`. I'll make this configurable later.
+
 The current setup accepts 3 run types:
 
-1. initialise
+1.initialise
 
  This run type initialises jobs for each table found in the target database. It attempts to select the best column to split on and defaults the import type to incremental based on the split. For MySQL an auto increment column is looked for. On Netezza the distribution key is checked. It's important to note this is a best guess. If a suitable column is not found the job is tagged a disabled.
 
@@ -102,7 +109,7 @@ To run the initialiser to pre-populate the jobs run `sqoop-runner.sh run_type db
 bin/sqoop-runner.sh initialise mysql mysql-server target_database
 ```
 
-2. create
+2.create
 
  This run type creates a job. It expects a `:` separated list of parameters in the form db_type:server:database:tablename:split_by_col:num_mappers:check_col:last_val
 
@@ -112,7 +119,7 @@ bin/sqoop-runner.sh initialise mysql mysql-server target_database
  bin/sqoop-runner.sh create mysql:localhost:my_db:my_table:my_auto_incr_col:4:my_auto_incr_col:0
  ```
 
-3. exec
+3.exec
 
 This run type executes the job given as a parameter.
 
