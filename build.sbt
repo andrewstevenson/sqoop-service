@@ -9,7 +9,9 @@ scalacOptions := Seq("-unchecked", "+deprecation", "-encoding", "utf8", "-featur
 resolvers ++= Seq(
   "spray repo" at "http://repo.spray.io/",
   "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
-  "cloudera" at "https://repository.cloudera.com/content/repositories/releases/"
+//  "cloudera" at "https://repository.cloudera.com/content/repositories/releasess/",
+//  "cloudera public" at "https://repository.cloudera.com/artifactory/public/",
+  "cloudera repo" at "https://repository.cloudera.com/artifactory/repo"
 )
 
 libraryDependencies ++= {
