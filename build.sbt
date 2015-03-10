@@ -44,3 +44,5 @@ libraryDependencies ++= {
 unmanagedResourceDirectories in Compile <+= baseDirectory
 
 excludeFilter in unmanagedResources := HiddenFileFilter || "node_modules*" || "project*" || "target*" || "sqoop-*" || "lib"
+
+test in assembly := {}

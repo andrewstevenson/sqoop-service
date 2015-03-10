@@ -16,7 +16,7 @@ import org.apache.hadoop.conf.Configuration
 import scala.collection.JavaConversions._
 import scala.util.{Left, Right}
 
-class JobMetaStorage extends JobStorage {
+class JobMetaStorage() extends JobStorage {
   val log = LoggerFactory.getLogger(classOf[JobMetaStorage])
 
   private val PROPERTY_CLASS_SCHEMA: String = "schema"
@@ -28,12 +28,20 @@ class JobMetaStorage extends JobStorage {
   private val META_CONNECT_KEY: String = "metastore.connect.string"
 
   //get Data access objects for sqoop_jobs and sqpop_job_props
-  val conn_jobs = new SqoopJobDAO()
-  val conn_props = new SqoopJobPropsDAO()
+  var conn_jobs = new SqoopJobDAO()
+  var conn_props = new SqoopJobPropsDAO()
 
   //called by sqoop to check it can use this connector
   def canAccept(descriptor: util.Map[String, String]): Boolean = {
     true
+  }
+
+  def set_conn_jobs(conn: SqoopJobDAO) = {
+    conn_jobs = conn
+  }
+
+  def set_conn_props(conn: SqoopJobPropsDAO) = {
+    conn_props = conn
   }
 
   //not implemented.
@@ -50,7 +58,7 @@ class JobMetaStorage extends JobStorage {
   @throws(classOf[IOException])
   def read(job_name: String): JobData = {
 
-    //checj if job exists. returns Pair[job_name, boolean]
+    //check if job exists. returns Pair[job_name, boolean]
     val job = check_if_exists(job_name = job_name)
 
     //check on second attribute to see if job exists

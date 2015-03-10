@@ -2,32 +2,13 @@ package com.datamountaineer.ingestor.sqoop
 
 import com.cloudera.sqoop.SqoopOptions
 import com.cloudera.sqoop.SqoopOptions.IncrementalMode
-import com.datamountaineer.ingestor.IngestorTest
+import com.datamountaineer.ingestor.{IngestorTest, IngestorTestTrait}
 import com.datamountaineer.ingestor.utils.Constants
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
 import scala.collection.JavaConversions._
 
 class IngestSqoopTest extends IngestorTest with BeforeAndAfter with MockitoSugar  {
-  val MY_SQL: String = "mysql"
-  val LOCALHOST: String = "localhost"
-  val TEST_DB: String = "test_db"
-  val TEST_TABLE: String = "test_table"
-  val SPLIT_BY_COL: String = "id"
-  val NUM_MAPPERS: String = "4"
-  val input = MY_SQL + Constants.SPILT_DELIMITER + LOCALHOST + Constants.SPILT_DELIMITER + TEST_DB +
-    Constants.SPILT_DELIMITER + TEST_TABLE + Constants.SPILT_DELIMITER + SPLIT_BY_COL + Constants.SPILT_DELIMITER +
-    NUM_MAPPERS + Constants.SPILT_DELIMITER + SPLIT_BY_COL + Constants.SPILT_DELIMITER + "0"
-  val connection_string: String = "jdbc:" + MY_SQL + "://" + LOCALHOST + "/" + TEST_DB
-  val target_dir: String = SqoopTargetDirPreFix + "/" + LOCALHOST + "/" + TEST_DB + "/" + TEST_TABLE +
-    "/run_date=YYYYMMDD"
-  var ingest : ingestSqoop = _
-  var options: SqoopOptions = _
-
-  before {
-    ingest = new ingestSqoop(input, true)
-    options = ingest.build_sqoop_options()
-  }
 
   test("SqoopOptions from an input") {
     val map = mapAsJavaMap(ingest.params)

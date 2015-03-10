@@ -4,11 +4,13 @@ import java.io.IOException
 import java.sql.{Connection, DriverManager, ResultSet}
 
 import com.datamountaineer.ingestor.models.JobMetaStorage
+import com.datamountaineer.ingestor.conf.Configuration
 import org.slf4j.LoggerFactory
 
-object initialiser {
-  val log = LoggerFactory.getLogger("initialiser")
+import scala.util.Try
 
+object Initialiser  extends Configuration {
+  val log = LoggerFactory.getLogger("initialiser")
   /*
   * WHAT TO REPLACE THIS WITH SLICK!!!!!!
   *
@@ -62,7 +64,7 @@ object initialiser {
       while (rs.next()) {
         val input = rs.getString("input")
         //create sqoop options
-        val sqoop_options = new ingestSqoop(input, true).build_sqoop_options()
+        val sqoop_options = new IngestSqoop(input, true).build_sqoop_options()
         //call ingestor to create the
         val storage = new JobMetaStorage
         storage.create(sqoop_options)
@@ -95,8 +97,10 @@ object initialiser {
   def get_conn(db_type: String, server: String, database: String) : Connection = {
     db_type.toLowerCase match {
       case "mysql" =>
-        val mysql_username = "sqoop"
-        val mysql_password = "sqoop"
+        val mysql_username = Try(config.getString(db_type + "_" + server + "_" + database + "." + "username"))
+          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_USER").toUpperCase()))
+        val mysql_password = Try(config.getString(db_type + "_" + server + "_" + database + "." + "password"))
+          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_PASS").toUpperCase()))
         val conn_str = "jdbc:mysql://" + server + ":3306/" + database
         //Class.forName("com.mysql.jdbc.Driver").newInstance
         classOf[com.mysql.jdbc.Driver].newInstance()
@@ -110,9 +114,12 @@ object initialiser {
         }
       case "netezza" =>
         classOf[org.netezza.Driver].newInstance()
+        val username = Try(config.getString(db_type + "_" + server + "_" + database + "." + "username"))
+          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_USER").toUpperCase()))
+        val password = Try(config.getString(db_type + "_" + server + "_" + database + "." + "password"))
+          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_PASS").toUpperCase()))
         val conn = DriverManager.getConnection("jdbc:netezza://" + server + ":5480/" + database,
-          System.getenv("NETEZZA_USER"),
-          System.getenv("NETEZZA_PASS"))
+          username,password)
         conn
     }
   }

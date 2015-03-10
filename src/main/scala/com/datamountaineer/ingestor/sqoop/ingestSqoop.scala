@@ -1,14 +1,18 @@
 package com.datamountaineer.ingestor.sqoop
 
+import ch.qos.logback.classic.joran.JoranConfigurator
+import ch.qos.logback.core.FileAppender
 import com.cloudera.sqoop.SqoopOptions
 import com.cloudera.sqoop.SqoopOptions.{FileLayout, IncrementalMode}
 import com.datamountaineer.ingestor.conf.Configuration
-import org.slf4j.LoggerFactory
 import com.datamountaineer.ingestor.utils.Constants
+import ch.qos.logback.classic.LoggerContext
+import org.slf4j.{MDC, LoggerFactory}
 
 
-class ingestSqoop(input: String, incr: Boolean) extends Configuration {
-  val log = LoggerFactory.getLogger(classOf[ingestSqoop])
+class IngestSqoop(input: String, incr: Boolean) extends Configuration {
+  val log = LoggerFactory.getLogger(classOf[IngestSqoop])
+  val logger_context : LoggerContext = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
   val params: Map[String, String] = extract_sqoop_params(input, incr)
 
   private val db_type: String = params.get(Constants.DB_TYPE_KEY).get
