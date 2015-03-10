@@ -3,7 +3,7 @@
 target_server=$1
 version=$2
 target_dir=$3
-
+me=$(echo $(whoami) | sed 's/europe\\//g')
 sqoop_home=/usr/lib/sqoop
 
 rm -f sqoop-service*.tar.gz
@@ -19,8 +19,8 @@ mv sqoop-service-${version}/*.* sqoop-service-${version}/conf
 cp lib/*.jar sqoop-service-${version}/lib
 cp target/scala-2.10/sqoop-service-assembly-${version}.jar sqoop-service-${version}
 tar -zcvf sqoop-service-${version}.tar.gz sqoop-service-${version}
-scp sqoop-service-${version}.tar.gz cloudera@${target_server}:/${target_dir}
-ssh cloudera@${target_server} "rm -f -r ${target_dir}/sqoop-service-${version};
-tar -zxvf ${target_dir}/sqoop-service-${version}.tar.gz;
-sudo cp ${target_dir}/sqoop-service-${version}/sqoop-service-assembly-${version}.jar ${sqoop_home}/lib"
+scp sqoop-service-${version}.tar.gz ${me}@${target_server}:/${target_dir}
+ssh $me@${target_server} "rm -f -r ${target_dir}/sqoop-service-${version};
+tar -zxvf ${target_dir}/sqoop-service-${version}.tar.gz;"
+//sx su -; cp ${target_dir}/sqoop-service-${version}/sqoop-service-assembly-${version}.jar ${sqoop_home}/lib"
 
