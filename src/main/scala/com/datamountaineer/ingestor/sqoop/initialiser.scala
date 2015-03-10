@@ -50,13 +50,15 @@ object Initialiser  extends Configuration {
       System.exit(0)
     }
 
+    val db_type = args(0).toString
+    val server = args(1).toString
+    val database = args(2).toString
+    initialise(db_type, server, database)
+  }
+
+  def initialise(db_type: String, server: String, database: String) = {
     var conn: Connection = null
-
     try {
-      val db_type = args(0).toString
-      val server = args(1).toString
-      val database = args(2).toString
-
       conn = get_conn(db_type, server, database)
       val stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
       val query = get_query(db_type).replace("MY_DATABASE", database).replace("MY_SERVER", server)
@@ -98,11 +100,17 @@ object Initialiser  extends Configuration {
   def get_conn(db_type: String, server: String, database: String) : Connection = {
     db_type.toLowerCase match {
       case "mysql" =>
-        val mysql_username = Try(config.getString(db_type + "_" + server + "_" + database + "." + "username"))
-          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_USER").toUpperCase()))
-        val mysql_password = Try(config.getString(db_type + "_" + server + "_" + database + "." + "password"))
-          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_PASS").toUpperCase()))
         val conn_str = "jdbc:mysql://" + server + ":3306/" + database
+        val mysql_username = Try(config.getString(db_type + "_" + server + "_" + database + "_db." + "username"))
+          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_USER").toUpperCase()))
+
+        if (mysql_username.equals("")) log.error("Unable to find user name in config files for %s".format(server))
+
+        val mysql_password = Try(config.getString(db_type + "_" + server + "_" + database + "_db." + "password"))
+          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_PASS").toUpperCase()))
+
+        if (mysql_password.equals("")) log.error("Unable to find password in config files for %s".format(server))
+
         //Class.forName("com.mysql.jdbc.Driver").newInstance
         classOf[com.mysql.jdbc.Driver].newInstance()
         try {
@@ -117,8 +125,15 @@ object Initialiser  extends Configuration {
         classOf[org.netezza.Driver].newInstance()
         val username = Try(config.getString(db_type + "_" + server + "_" + database + "." + "username"))
           .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_USER").toUpperCase()))
+
+        if (username.equals("")) log.error("Unable to find user name in config files for %s".format(server))
+
+
         val password = Try(config.getString(db_type + "_" + server + "_" + database + "." + "password"))
           .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_PASS").toUpperCase()))
+
+        if (password.equals("")) log.error("Unable to find user name in config files for %s".format(server))
+
         val conn = DriverManager.getConnection("jdbc:netezza://" + server + ":5480/" + database,
           username,password)
         conn

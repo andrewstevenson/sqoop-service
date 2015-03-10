@@ -116,8 +116,9 @@ class JobMetaStorageTest extends IngestorTestTrait with BeforeAndAfter with Mock
       assert(IngestorTest.NUM_MAPPERS === options.getNumMappers.toString)
     }
 
-    "check not find this job foo" in {
+    "check we shouldn't find this job foo" in {
       val pair : Pair[Long, Boolean] = storage.check_if_exists("foo")
+      assert(pair._2==false)
     }
   }
 }
