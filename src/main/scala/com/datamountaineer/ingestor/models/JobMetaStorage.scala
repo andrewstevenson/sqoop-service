@@ -28,8 +28,8 @@ class JobMetaStorage() extends JobStorage {
   private val META_CONNECT_KEY: String = "metastore.connect.string"
 
   //get Data access objects for sqoop_jobs and sqpop_job_props
-  var conn_jobs = new SqoopJobDAO()
-  var conn_props = new SqoopJobPropsDAO()
+  var conn_jobs : SqoopJobDAO = _
+  var conn_props : SqoopJobPropsDAO = _
 
   //called by sqoop to check it can use this connector
   def canAccept(descriptor: util.Map[String, String]): Boolean = {
@@ -44,9 +44,18 @@ class JobMetaStorage() extends JobStorage {
     conn_props = conn
   }
 
-  //not implemented.
+
+
+  //Called from sqoop.
   @throws(classOf[IOException])
-  def open(descriptor: util.Map[String, String]) {
+  def open(descriptor: util.Map[String, String]) = {
+    set_conn_jobs(new SqoopJobDAO)
+    set_conn_props(new SqoopJobPropsDAO)
+  }
+
+  def open() = {
+    set_conn_jobs(new SqoopJobDAO)
+    set_conn_props(new SqoopJobPropsDAO)
   }
 
   /**

@@ -67,6 +67,7 @@ object Initialiser  extends Configuration {
         val sqoop_options = new IngestSqoop(input, true).build_sqoop_options()
         //call ingestor to create the
         val storage = new JobMetaStorage
+        storage.open()
         storage.create(sqoop_options)
       }
     }

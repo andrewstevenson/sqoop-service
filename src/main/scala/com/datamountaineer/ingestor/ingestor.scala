@@ -92,6 +92,7 @@ object ingestor extends Configured with Tool {
    */
   def process_sqoop(database: Option[String] = None, job_name: Option[String] = None, run_type: String, sqoop_options: Option[SqoopOptions] = None) = {
     val storage = new JobMetaStorage
+    storage.open()
     run_type match {
       case "create" =>
         storage.create(sqoop_options.asInstanceOf[SqoopOptions])
