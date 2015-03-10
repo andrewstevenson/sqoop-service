@@ -1,14 +1,15 @@
 package com.datamountaineer.ingestor.models
 
 
-import com.datamountaineer.ingestor.{IngestorTest, IngestorTestTrait}
+import com.datamountaineer.ingestor.IngestorTest
 import com.datamountaineer.ingestor.rest.Failure
+import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
 
 class JobMetaStorageTest extends IngestorTest with BeforeAndAfter with MockitoSugar {
-  val storage = new JobMetaStorage
+  //mock storage
+  val storage = mock[JobMetaStorage]
 
   test("Storage should build job name from SqoopOptions connection string") {
     assert(storage.get_job_name(options) === test_job_name)
@@ -34,6 +35,9 @@ class JobMetaStorageTest extends IngestorTest with BeforeAndAfter with MockitoSu
     storage.set_conn_jobs(job_dao)
     storage.set_conn_props(prop_dao)
 
+    //check list
     assert(storage.list() === el)
+
+
   }
 }

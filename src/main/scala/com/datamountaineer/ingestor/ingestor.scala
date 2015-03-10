@@ -97,7 +97,7 @@ object ingestor extends Configured with Tool {
         storage.create(sqoop_options.asInstanceOf[SqoopOptions])
       case "exec" =>
         database match {
-          case _ => execute_job(job_name.toString, storage)
+          case None => execute_job(job_name.toString, storage)
           case Some(database) => execute_database(database.toString, storage)
         }
       case _ => log.error("Unsupported operation %s!".format(run_type))

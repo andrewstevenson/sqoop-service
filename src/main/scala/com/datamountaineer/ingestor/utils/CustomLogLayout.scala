@@ -11,7 +11,7 @@ import org.apache.commons.lang.StringUtils
 
 class CustomLogLayout extends LayoutBase[ILoggingEvent] {
 
-  override def doLayout(event: ILoggingEvent) : StringBuffer = {
+  override def doLayout(event: ILoggingEvent) : String = {
     val sbuf = new StringBuffer(128)
     sbuf.append(new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date(event.getTimeStamp())))
     sbuf.append(" ")
@@ -22,6 +22,6 @@ class CustomLogLayout extends LayoutBase[ILoggingEvent] {
     sbuf.append(" - ");
     sbuf.append(StringUtils.substringBefore(event.getThrowableProxy().getMessage(), IOUtils.LINE_SEPARATOR))
     }
-    sbuf.append(CoreConstants.LINE_SEPARATOR)
+    sbuf.append(CoreConstants.LINE_SEPARATOR).toString
   }
 }

@@ -123,8 +123,7 @@ class SqoopJobDAO extends Configuration {
             params.job_name.map(table.job_name is _),
             params.server.map(table.server is _),
             params.database.map(table.database is _),
-            params.table.map(table.table_name is _),
-            params.table.map(table.enabled is _)
+            params.table.map(table.table_name is _)
           ).flatten match {
             case Nil => ConstColumn.TRUE
             case seq => seq.reduce(_ && _)
