@@ -6,15 +6,14 @@ import com.cloudera.sqoop.SqoopOptions
 import com.datamountaineer.ingestor.models.{SqoopJobDAO, SqoopJobSearchParameters, SqoopJob, JobMetaStorage}
 import com.datamountaineer.ingestor.rest.Failure
 import com.datamountaineer.ingestor.sqoop.IngestSqoop
+import com.datamountaineer.ingestor.utils.Constants
 import org.apache.hadoop.conf.{Configuration, Configured}
 import org.apache.hadoop.util.{Tool, ToolRunner}
 import org.apache.sqoop.tool.ImportTool
 import org.slf4j.{MDC, LoggerFactory}
 
-object ingestor extends Configured with Tool {
+object Ingestor extends Configured with Tool {
   val log = LoggerFactory.getLogger("ingestor")
-  private val STORAGE_IMPLEMENTATION_KEY = "sqoop.job.storage.implementations"
-  private val STORAGE_IMPLEMENTATION_CLASS = "com.datamountaineer.sqoop.models.JobMetaStorage"
   val batch_size = 10
   val conn_jobs = new SqoopJobDAO()
 
@@ -37,17 +36,20 @@ object ingestor extends Configured with Tool {
       * @param storage The storage pointing to the metastore
       */
   def execute_job (job_name: String, storage: JobMetaStorage) = {
-    set_logger(job_name)
+    //set_logger(job_name)
     //read back our sqoop jobs to create a sqoop options
-    val stored_job_options = storage.read(job_name).getSqoopOptions
+    storage.open()
+    val job_data = storage.read(job_name)
+
+    val options =  job_data.getSqoopOptions
     //clone and set as parent. Sqoop uses this to reconstruct the job after execution.
-    val cloned_opts: SqoopOptions = stored_job_options.clone().asInstanceOf[SqoopOptions]
-    stored_job_options.setParent(cloned_opts)
+    val cloned_opts: SqoopOptions = options.clone().asInstanceOf[SqoopOptions]
+      options.setParent(cloned_opts)
     //make sure we use our metastore
-    stored_job_options.getConf.set(STORAGE_IMPLEMENTATION_KEY, STORAGE_IMPLEMENTATION_CLASS)
+      options.getConf.set(Constants.STORAGE_IMPLEMENTATION_KEY, Constants.STORAGE_IMPLEMENTATION_CLASS)
     val tool = new ImportTool()
     //run the sqoop!!
-    tool.run(stored_job_options)
+    tool.run(options)
   }
 
   /**
@@ -98,8 +100,8 @@ object ingestor extends Configured with Tool {
         storage.create(sqoop_options.asInstanceOf[SqoopOptions])
       case "exec" =>
         database match {
-          case None => execute_job(job_name.toString, storage)
-          case Some(database) => execute_database(database.toString, storage)
+          case None => execute_job(job_name.get, storage)
+          case Some(database) => execute_database(database, storage)
         }
       case _ => log.error("Unsupported operation %s!".format(run_type))
     }
@@ -118,7 +120,7 @@ object ingestor extends Configured with Tool {
     val job_type: String = args(0).toString
 
     job_type match {
-      case "sqoop:exec;job" =>
+      case "sqoop:exec:job" =>
         process_sqoop( job_name = Some(args(1).toString), run_type = "exec")
 
         //            } else {
@@ -159,7 +161,7 @@ object ingestor extends Configured with Tool {
     val conf = new Configuration()
 
     val res = {
-      ToolRunner.run(conf, ingestor, strings)
+      ToolRunner.run(conf, Ingestor, strings)
     }
     res
   }

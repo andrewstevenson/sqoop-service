@@ -5,12 +5,22 @@ import java.sql.{Connection, DriverManager, ResultSet}
 
 import com.datamountaineer.ingestor.models.JobMetaStorage
 import com.datamountaineer.ingestor.conf.Configuration
+import com.typesafe.config.Config
+import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 
+import scala.collection.mutable
 import scala.util.Try
 
+
+case class db_details(conf: Config) {
+  val name = conf.getString("name")
+  val username = conf.getString("username")
+  val password = conf.getString("password")
+}
+
 object Initialiser  extends Configuration {
-  val log = LoggerFactory.getLogger("initialiser")
+  val log = LoggerFactory.getLogger("Initialiser")
   /*
   * WHAT TO REPLACE THIS WITH SLICK!!!!!!
   *
@@ -60,21 +70,27 @@ object Initialiser  extends Configuration {
     var conn: Connection = null
     try {
       conn = get_conn(db_type, server, database)
-      val stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
-      val query = get_query(db_type).replace("MY_DATABASE", database).replace("MY_SERVER", server)
-      val rs: ResultSet = stmt.executeQuery(query)
-      while (rs.next()) {
-        val input = rs.getString("input")
-        //create sqoop options
-        val sqoop_options = new IngestSqoop(input, true).build_sqoop_options()
-        //call ingestor to create the
-        val storage = new JobMetaStorage
-        storage.open()
-        storage.create(sqoop_options)
+
+      conn match {
+        case null => log.error("Could not connect to database %s on %s".format(database, server))
+        case _ => {
+          val stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
+          val query = get_query(db_type).replace("MY_DATABASE", database).replace("MY_SERVER", server)
+          val rs: ResultSet = stmt.executeQuery(query)
+          while (rs.next()) {
+            val input = rs.getString("input")
+            //create sqoop options
+            val sqoop_options = new IngestSqoop(input, true).build_sqoop_options()
+            //call ingestor to create the
+            val storage = new JobMetaStorage
+            storage.open()
+            storage.create(sqoop_options)
+          }
+        }
       }
     }
     finally {
-      conn.close()
+      if (conn != null) conn.close()
     }
   }
 
@@ -98,18 +114,23 @@ object Initialiser  extends Configuration {
    * @param database Database database to connect to
   * */
   def get_conn(db_type: String, server: String, database: String) : Connection = {
+    val conf_key = "%s.%s.dbs".format(db_type, server)
+    val conf : mutable.Buffer[db_details] = config.getConfigList(conf_key) map (new db_details(_))
+    val db_list = for (db <- conf if db.name.equals(database)) yield db.asInstanceOf[db_details]
+
+    if (db_list.size > 1) log.warn("Found more than one database called %s configured.".format(database))
+    if (db_list.size == 0) log.error("Did not find database called %s in application.conf.".format(database))
+    val db = db_list.head
+
     db_type.toLowerCase match {
       case "mysql" =>
         val conn_str = "jdbc:mysql://" + server + ":3306/" + database
-        val mysql_username = Try(config.getString(db_type + "_" + server + "_" + database + "_db." + "username"))
+
+        val mysql_username = Try(db.username)
           .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_USER").toUpperCase()))
 
-        if (mysql_username.equals("")) log.error("Unable to find user name in config files for %s".format(server))
-
-        val mysql_password = Try(config.getString(db_type + "_" + server + "_" + database + "_db." + "password"))
+        val mysql_password = Try(db.password)
           .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_PASS").toUpperCase()))
-
-        if (mysql_password.equals("")) log.error("Unable to find password in config files for %s".format(server))
 
         //Class.forName("com.mysql.jdbc.Driver").newInstance
         classOf[com.mysql.jdbc.Driver].newInstance()
@@ -123,16 +144,11 @@ object Initialiser  extends Configuration {
         }
       case "netezza" =>
         classOf[org.netezza.Driver].newInstance()
-        val username = Try(config.getString(db_type + "_" + server + "_" + database + "." + "username"))
+        val username = Try(db.username)
           .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_USER").toUpperCase()))
 
-        if (username.equals("")) log.error("Unable to find user name in config files for %s".format(server))
-
-
-        val password = Try(config.getString(db_type + "_" + server + "_" + database + "." + "password"))
+        val password = Try(db.password)
           .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_PASS").toUpperCase()))
-
-        if (password.equals("")) log.error("Unable to find user name in config files for %s".format(server))
 
         val conn = DriverManager.getConnection("jdbc:netezza://" + server + ":5480/" + database,
           username,password)

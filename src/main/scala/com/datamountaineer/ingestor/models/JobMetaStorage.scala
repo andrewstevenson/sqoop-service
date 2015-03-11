@@ -8,6 +8,7 @@ import com.cloudera.sqoop.SqoopOptions
 import com.cloudera.sqoop.metastore.{JobData, JobStorage}
 import com.cloudera.sqoop.tool.SqoopTool
 import com.datamountaineer.ingestor.rest.Failure
+import com.datamountaineer.ingestor.utils.Constants
 import org.slf4j.LoggerFactory
 
 //import org.apache.commons.logging.{Log, LogFactory}
@@ -16,16 +17,9 @@ import org.apache.hadoop.conf.Configuration
 import scala.collection.JavaConversions._
 import scala.util.{Left, Right}
 
-class JobMetaStorage() extends JobStorage {
-  val log = LoggerFactory.getLogger(classOf[JobMetaStorage])
-
-  private val PROPERTY_CLASS_SCHEMA: String = "schema"
-  private val PROPERTY_CLASS_SQOOP_OPTIONS: String = "SqoopOptions"
-  private val PROPERTY_CLASS_CONFIG: String = "config"
-  private val SQOOP_TOOL_KEY: String = "sqoop.tool"
-  private val PROPERTY_SET_KEY: String = "sqoop.property.set.id"
-  private val CUR_PROPERTY_SET_ID: String = "0"
-  private val META_CONNECT_KEY: String = "metastore.connect.string"
+class JobMetaStorage() extends JobStorage  {
+ // val log = LoggerFactory.getLogger(classOf[JobMetaStorage])
+  val log = LoggerFactory.getLogger("JobMetaStorage")
 
   //get Data access objects for sqoop_jobs and sqpop_job_props
   var conn_jobs : SqoopJobDAO = _
@@ -66,7 +60,6 @@ class JobMetaStorage() extends JobStorage {
    * */
   @throws(classOf[IOException])
   def read(job_name: String): JobData = {
-
     //check if job exists. returns Pair[job_name, boolean]
     val job = check_if_exists(job_name = job_name)
 
@@ -85,19 +78,19 @@ class JobMetaStorage() extends JobStorage {
           case Right(props: List[SqoopJobProp]) =>
             val tool_name = Some(props.filter(
               p =>  {
-                p.prop_class == PROPERTY_CLASS_SCHEMA &&
-                p.prop_name == SQOOP_TOOL_KEY
+                p.prop_class == Constants.PROPERTY_CLASS_SCHEMA &&
+                p.prop_name == Constants.SQOOP_TOOL_KEY
             }).head.prop_val)
 
             //Bail if no tool name. Means job wasn't persisted correctly
             tool_name.getOrElse(log.error("Couldn't find tool name!"))
 
             val sqoop_options = props.filter(p => {
-              p.prop_class == PROPERTY_CLASS_SQOOP_OPTIONS
+              p.prop_class == Constants.PROPERTY_CLASS_SQOOP_OPTIONS
             })
 
             val conf_options = props.filter(p => {
-              p.prop_class == PROPERTY_CLASS_CONFIG
+              p.prop_class == Constants.PROPERTY_CLASS_CONFIG
             })
 
             val tool = SqoopTool.getTool(tool_name.get)
@@ -122,7 +115,7 @@ class JobMetaStorage() extends JobStorage {
             /*this property isn't stored by sqoop in metastore. not implementated in sqoop_option.writeproperties so reset it
              as when sqoop write backs the results of store jobs it checks if the job name or descriptor is null and bails
              */
-            opts.setStorageDescriptor(mapAsJavaMap(Map( META_CONNECT_KEY -> opts.getConnectString)))
+            opts.setStorageDescriptor(mapAsJavaMap(Map( Constants.META_CONNECT_KEY -> opts.getConnectString)))
             new JobData(opts,tool)
         }
     }
@@ -169,6 +162,7 @@ class JobMetaStorage() extends JobStorage {
     val job = conn_jobs.get(job_name)
     job match {
       case Left(failure) =>
+        log.warn(failure.message)
         Pair(-1, false)
       case Right(j: SqoopJob) =>
         Pair(j.id.get ,true)
@@ -215,18 +209,18 @@ class JobMetaStorage() extends JobStorage {
       job_name=job_name,
       SqoopJobProp(job_name=job_name,
       job_id=job_id,
-      prop_name=SQOOP_TOOL_KEY,
+      prop_name=Constants.SQOOP_TOOL_KEY,
       prop_val=tool_name,
-      prop_class=PROPERTY_CLASS_SCHEMA))
+      prop_class=Constants.PROPERTY_CLASS_SCHEMA))
 
     // Save the property set id.
     write_job_property(
       job_name=job_name,
       SqoopJobProp(job_name=job_name,
       job_id=job_id,
-      prop_name=PROPERTY_SET_KEY,
-      prop_val=CUR_PROPERTY_SET_ID,
-      prop_class=PROPERTY_CLASS_SCHEMA))
+      prop_name=Constants.PROPERTY_SET_KEY,
+      prop_val=Constants.CUR_PROPERTY_SET_ID,
+      prop_class=Constants.PROPERTY_CLASS_SCHEMA))
 
     // Save all properties of the SqoopOptions.
     for (entry <- sqoop_options.writeProperties.entrySet())
@@ -234,13 +228,14 @@ class JobMetaStorage() extends JobStorage {
         job_name=job_name,
         SqoopJobProp(job_name=job_name,
         job_id=job_id,
-        prop_class= PROPERTY_CLASS_SQOOP_OPTIONS,
+        prop_class= Constants.PROPERTY_CLASS_SQOOP_OPTIONS,
         prop_name = entry.getKey.toString ,
         prop_val = entry.getValue.toString
       ))
 
     // And save all unique properties of the configuration.
     val saveConf: Configuration = sqoop_options.getConf
+    saveConf.set(Constants.STORAGE_IMPLEMENTATION_KEY, Constants.STORAGE_IMPLEMENTATION_CLASS)
     val baseConf: Configuration = new Configuration
 
     for (entry <- saveConf) {
@@ -252,7 +247,7 @@ class JobMetaStorage() extends JobStorage {
           job_name=job_name,
           SqoopJobProp(job_name=job_name,
             job_id=job_id,
-            prop_class= PROPERTY_CLASS_CONFIG,
+            prop_class= Constants.PROPERTY_CLASS_CONFIG,
             prop_name = key,
             prop_val = rawVal
           ))

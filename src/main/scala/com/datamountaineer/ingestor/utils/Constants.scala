@@ -19,4 +19,15 @@ object Constants {
   val ORACLE : String = "oracle"
 
   val SPILT_DELIMITER : String = ":"
+  val STORAGE_IMPLEMENTATION_KEY = "sqoop.job.storage.implementations"
+  val STORAGE_IMPLEMENTATION_CLASS = "com.datamountaineer.ingestor.models.JobMetaStorage"
+
+  val PROPERTY_CLASS_SCHEMA: String = "schema"
+  val PROPERTY_CLASS_SQOOP_OPTIONS: String = "SqoopOptions"
+  val PROPERTY_CLASS_CONFIG: String = "config"
+  val SQOOP_TOOL_KEY: String = "sqoop.tool"
+  val PROPERTY_SET_KEY: String = "sqoop.property.set.id"
+  val CUR_PROPERTY_SET_ID: String = "0"
+  val META_CONNECT_KEY: String = "metastore.connect.string"
+
 }

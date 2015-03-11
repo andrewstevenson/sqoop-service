@@ -25,7 +25,7 @@ libraryDependencies ++= {
   val logbackV= "1.0.13"
   Seq(
     "org.apache.sqoop" % "sqoop" % sqoopV % "provided",
-    "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided",
+    "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided" excludeAll ExclusionRule(organization = "org.slf4j"),
     "ch.qos.logback" % "logback-classic" % logbackV excludeAll ExclusionRule(organization = "org.slf4j"),
     "io.spray" % "spray-http" % sprayV excludeAll ExclusionRule(organization = "org.slf4j"),
     "com.typesafe.slick" %% "slick" % slickV excludeAll ExclusionRule(organization = "org.slf4j"),
@@ -43,6 +43,6 @@ libraryDependencies ++= {
 
 unmanagedResourceDirectories in Compile <+= baseDirectory
 
-excludeFilter in unmanagedResources := HiddenFileFilter || "node_modules*" || "project*" || "target*" || "sqoop-*" || "lib"
+excludeFilter in unmanagedResources := HiddenFileFilter || "node_modules*" || "project*" || "target*" || "sqoop-*" || "lib" || "src/main/resources"
 
-test in assembly := {}
+//test in assembly := {}
