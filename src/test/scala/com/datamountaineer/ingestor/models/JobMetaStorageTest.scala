@@ -2,6 +2,7 @@ package com.datamountaineer.ingestor.models
 
 
 import com.cloudera.sqoop.metastore.JobData
+import com.datamountaineer.ingestor.IngestorTest.unitTest
 import com.datamountaineer.ingestor.rest.{FailureType, Failure}
 import com.datamountaineer.ingestor.{IngestorTest, IngestorTestTrait}
 import org.mockito.Mockito._
@@ -89,7 +90,7 @@ class JobMetaStorageTest extends IngestorTestTrait with BeforeAndAfter with Mock
   "JobMetaStorage " should {
     val list = asJavaList(List(IngestorTest.TEST_JOB_NAME))
 
-    "read get back a object of type JobData" in {
+    "read get back a object of type JobData" taggedAs(unitTest) in {
       assert(list === storage.list())
     }
 
@@ -97,26 +98,26 @@ class JobMetaStorageTest extends IngestorTestTrait with BeforeAndAfter with Mock
     job_data shouldBe a[JobData]
     val options = job_data.getSqoopOptions
 
-    "have a job name set to  %s".format(IngestorTest.TEST_JOB_NAME) in {
+    "have a job name set to  %s".format(IngestorTest.TEST_JOB_NAME) taggedAs(unitTest) in {
       assert(IngestorTest.TEST_JOB_NAME === options.getJobName)
     }
 
-    "have a connection string set to %s".format(IngestorTest.CONNECTION_STRING) in {
+    "have a connection string set to %s".format(IngestorTest.CONNECTION_STRING) taggedAs(unitTest) in {
       assert(IngestorTest.CONNECTION_STRING === options.getConnectString)
     }
-    "have a split by column set to  %s".format(IngestorTest.SPLIT_BY_COL)  in {
+    "have a split by column set to  %s".format(IngestorTest.SPLIT_BY_COL) taggedAs(unitTest) in {
       assert(IngestorTest.SPLIT_BY_COL === options.getSplitByCol)
     }
 
-    "have a target directory set to %s".format(IngestorTest.TARGET_DIR)  in {
+    "have a target directory set to %s".format(IngestorTest.TARGET_DIR) taggedAs(unitTest) in {
       assert(IngestorTest.TARGET_DIR === options.getTargetDir)
     }
 
-    "have a the number of mappers set to %s".format(IngestorTest.NUM_MAPPERS)in {
+    "have a the number of mappers set to %s".format(IngestorTest.NUM_MAPPERS) taggedAs(unitTest) in {
       assert(IngestorTest.NUM_MAPPERS === options.getNumMappers.toString)
     }
 
-    "check we shouldn't find this job foo" in {
+    "check we shouldn't find this job foo"  taggedAs(unitTest) in {
       val pair : Pair[Long, Boolean] = storage.check_if_exists("foo")
       assert(pair._2==false)
     }

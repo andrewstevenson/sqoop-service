@@ -3,21 +3,13 @@ package com.datamountaineer.ingestor.sqoop
 import java.io.IOException
 import java.sql.{Connection, DriverManager, ResultSet}
 
-import com.datamountaineer.ingestor.models.JobMetaStorage
 import com.datamountaineer.ingestor.conf.Configuration
-import com.typesafe.config.Config
-import scala.collection.JavaConversions._
+import com.datamountaineer.ingestor.models.JobMetaStorage
 import org.slf4j.LoggerFactory
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable
-import scala.util.Try
 
-
-case class db_details(conf: Config) {
-  val name = conf.getString("name")
-  val username = conf.getString("username")
-  val password = conf.getString("password")
-}
 
 object Initialiser  extends Configuration {
   val log = LoggerFactory.getLogger("Initialiser")
@@ -67,30 +59,30 @@ object Initialiser  extends Configuration {
   }
 
   def initialise(db_type: String, server: String, database: String) = {
-    var conn: Connection = null
+    var conn: Option[Connection] = null
     try {
       conn = get_conn(db_type, server, database)
 
       conn match {
-        case null => log.error("Could not connect to database %s on %s".format(database, server))
+        case None => log.error("Could not connect to database %s on %s".format(database, server))
         case _ => {
-          val stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
+          val stmt = conn.get.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
           val query = get_query(db_type).replace("MY_DATABASE", database).replace("MY_SERVER", server)
           val rs: ResultSet = stmt.executeQuery(query)
+          val storage = new JobMetaStorage
+          storage.open()
           while (rs.next()) {
             val input = rs.getString("input")
             //create sqoop options
             val sqoop_options = new IngestSqoop(input, true).build_sqoop_options()
             //call ingestor to create the
-            val storage = new JobMetaStorage
-            storage.open()
             storage.create(sqoop_options)
           }
         }
       }
     }
     finally {
-      if (conn != null) conn.close()
+      if (conn != null) conn.get.close()
     }
   }
 
@@ -108,51 +100,57 @@ object Initialiser  extends Configuration {
   }
 
   /**
-  * Returns a connection for given db type
-  * @param db_type Type of database e.g. mysql, netezza
-   * @param server Server hosting the database
-   * @param database Database database to connect to
-  * */
-  def get_conn(db_type: String, server: String, database: String) : Connection = {
+   * Return a databases connection details if found in application.conf
+   *
+   * @param db_type The type of database
+   * @param server The server hosting the database
+   * @param database The database credentials to look up
+   * */
+  def get_db_conf(db_type: String, server: String, database: String) : Option[DbConfig] = {
     val conf_key = "%s.%s.dbs".format(db_type, server)
-    val conf : mutable.Buffer[db_details] = config.getConfigList(conf_key) map (new db_details(_))
-    val db_list = for (db <- conf if db.name.equals(database)) yield db.asInstanceOf[db_details]
+    val conf : mutable.Buffer[DbConfig] = config.getConfigList(conf_key) map (new DbConfig(_, db_type, server))
+    val db_list = for (db <- conf if db.name.equals(database)) yield db.asInstanceOf[DbConfig]
 
     if (db_list.size > 1) log.warn("Found more than one database called %s configured.".format(database))
-    if (db_list.size == 0) log.error("Did not find database called %s in application.conf.".format(database))
-    val db = db_list.head
+    if (db_list.size == 0) {
+      log.error("Did not find database called %s in application.conf.".format(database))
+      None
+    } else {
+      Some(db_list.head)
+    }
+  }
 
-    db_type.toLowerCase match {
-      case "mysql" =>
-        val conn_str = "jdbc:mysql://" + server + ":3306/" + database
-
-        val mysql_username = Try(db.username)
-          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_USER").toUpperCase()))
-
-        val mysql_password = Try(db.password)
-          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_PASS").toUpperCase()))
-
-        //Class.forName("com.mysql.jdbc.Driver").newInstance
-        classOf[com.mysql.jdbc.Driver].newInstance()
-        try {
-          val conn = DriverManager.getConnection(conn_str, mysql_username, mysql_password)
-          conn
-        } catch {
-          case e: Exception  =>
-            log.error(e.getMessage, new IOException)
-            throw e
+  /**
+  * Returns a connection for given db type
+  * @param db_type Type of database e.g. mysql, netezza
+  * @param server Server hosting the database
+  * @param database Database database to connect to
+  * */
+  def get_conn(db_type: String, server: String, database: String) : Option[Connection] = {
+    val db = get_db_conf(db_type, server, database)
+    db match {
+      case None => None
+      case db_details => {
+        val credentials = db.get.get_credentials()
+        db_type.toLowerCase match {
+          case "mysql" =>
+            val conn_str = "jdbc:mysql://" + server + ":3306/" + database
+            classOf[com.mysql.jdbc.Driver].newInstance()
+            try {
+              val conn = DriverManager.getConnection(conn_str, credentials._1, credentials._2)
+              Some(conn)
+            } catch {
+              case e: Exception  =>
+                log.error(e.getMessage, new IOException)
+                throw e
+            }
+          case "netezza" =>
+            classOf[org.netezza.Driver].newInstance()
+            val conn = DriverManager.getConnection("jdbc:netezza://" + server + ":5480/" + database,
+              credentials._1, credentials._2)
+            Some(conn)
         }
-      case "netezza" =>
-        classOf[org.netezza.Driver].newInstance()
-        val username = Try(db.username)
-          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_USER").toUpperCase()))
-
-        val password = Try(db.password)
-          .getOrElse(System.getenv((db_type + "_" + server + "_" + database + "_PASS").toUpperCase()))
-
-        val conn = DriverManager.getConnection("jdbc:netezza://" + server + ":5480/" + database,
-          username,password)
-        conn
+      }
     }
   }
 }

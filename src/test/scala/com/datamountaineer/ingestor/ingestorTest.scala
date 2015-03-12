@@ -1,6 +1,7 @@
 package com.datamountaineer.ingestor
 
 import com.datamountaineer.ingestor.utils.Constants
+import org.scalatest.Tag
 
 object IngestorTest extends IngestorTestTrait {
 
@@ -17,4 +18,7 @@ object IngestorTest extends IngestorTestTrait {
   val CONNECTION_STRING: String = "jdbc:" + MY_SQL + "://" + LOCALHOST + "/" + TEST_DB
   val TARGET_DIR: String = SqoopTargetDirPreFix + "/" + LOCALHOST + "/" + TEST_DB + "/" + TEST_TABLE +
     "/run_date=YYYYMMDD"
+
+  object unitTest extends Tag("com.datamountaineer.ingestor.ut")
+
 }

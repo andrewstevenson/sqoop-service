@@ -2,6 +2,7 @@ package com.datamountaineer.ingestor.sqoop
 
 import com.cloudera.sqoop.SqoopOptions
 import com.cloudera.sqoop.SqoopOptions.IncrementalMode
+import com.datamountaineer.ingestor.IngestorTest.unitTest
 import com.datamountaineer.ingestor.utils.Constants
 import com.datamountaineer.ingestor.{IngestorTest, IngestorTestTrait}
 import org.scalatest._
@@ -19,7 +20,7 @@ class IngestSqoopTest extends IngestorTestTrait with BeforeAndAfter with Mockito
   }
 
   "InjestSqoop" should  {
-    "create a SqoopOptions from input %s".format(IngestorTest.INPUT) in {
+    "create a SqoopOptions from input %s".format(IngestorTest.INPUT) taggedAs(unitTest) in {
       val map = mapAsJavaMap(INGEST.params)
       map should have size 8
       map should contain(Entry(Constants.DB_TYPE_KEY, IngestorTest.MY_SQL))
@@ -33,28 +34,28 @@ class IngestSqoopTest extends IngestorTestTrait with BeforeAndAfter with Mockito
       OPTIONS shouldBe a[SqoopOptions]
     }
 
-    "have connection string set" in {
+    "have connection string set" taggedAs(unitTest) in {
       assert(OPTIONS.getConnectString === IngestorTest.CONNECTION_STRING)
     }
-    "have table name set" in {
+    "have table name set" taggedAs(unitTest) in {
       assert(OPTIONS.getTableName === IngestorTest.TEST_TABLE)
     }
-    "have direct mode set" in {
+    "have direct mode set" taggedAs(unitTest) in {
       assert(OPTIONS.isDirect, true)
     }
-    "be incremental" in {
+    "be incremental" taggedAs(unitTest) in {
       assert(OPTIONS.getIncrementalMode === IncrementalMode.AppendRows)
     }
-    "have check col set to %s".format(IngestorTest.SPLIT_BY_COL) in {
+    "have check col set to %s".format(IngestorTest.SPLIT_BY_COL) taggedAs(unitTest) in {
       assert(OPTIONS.getIncrementalTestColumn === IngestorTest.SPLIT_BY_COL)
     }
-    "have Hive delimiters unset" in {
+    "have Hive delimiters unset" taggedAs(unitTest) in {
       assert(OPTIONS.getHiveDelimsReplacement === null)
     }
-    "have password file should be set" in {
+    "have password file should be set" taggedAs(unitTest) in {
       assert(OPTIONS.getPasswordFilePath != null)
     }
-    "have target_dir set to %s".format(IngestorTest.TARGET_DIR) in {
+    "have target_dir set to %s".format(IngestorTest.TARGET_DIR) taggedAs(unitTest) in {
       assert(OPTIONS.getTargetDir === IngestorTest.TARGET_DIR)
     }
   }

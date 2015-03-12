@@ -162,7 +162,7 @@ class JobMetaStorage() extends JobStorage  {
     val job = conn_jobs.get(job_name)
     job match {
       case Left(failure) =>
-        log.warn(failure.message)
+       // log.warn(failure.message)
         Pair(-1, false)
       case Right(j: SqoopJob) =>
         Pair(j.id.get ,true)
