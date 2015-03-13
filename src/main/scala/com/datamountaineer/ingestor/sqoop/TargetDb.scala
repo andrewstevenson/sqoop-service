@@ -10,10 +10,10 @@ import scala.util.Try
 
 class TargetDb (conf: Config = null, database_type: String, server: String, database: String) {
 
-  val name = database
+  val log = LoggerFactory.getLogger("TargetDb")
+  val name = Try(conf.getString("name")).getOrElse(database)
   val host = server
   val db_type = database_type
-  val log = LoggerFactory.getLogger("TargetDb")
   val username = Try(conf.getString("username")).getOrElse(get_env_credentials().get._1)
   val password = Try(conf.getString("password")).getOrElse(get_env_credentials().get._1)
 
@@ -55,7 +55,7 @@ class TargetDb (conf: Config = null, database_type: String, server: String, data
     val pass: Option[String] = Some(System.getenv(env_pass))
     val user: Option[String] = Some(System.getenv(env_usr))
 
-    if (pass.isEmpty || user.isEmpty) {
+    if (pass.get == null || user.get == null) {
       log.error("Did not find database called %s in application.conf or environment variables %s and %s".format(name, env_usr, env_pass))
       System.exit(-1)
       None
@@ -70,7 +70,7 @@ class TargetDb (conf: Config = null, database_type: String, server: String, data
   def get_conn() : Option[Connection] = {
     db_type.toLowerCase match {
       case "mysql" => {
-        val conn_str = "jdbc:mysql://" + server + ":3306/" + name
+        val conn_str = "jdbc:mysql://" + host + ":3306/" + name
         log.info("Attempting to connect to %s with connection string %s".format(name, conn_str))
         classOf[com.mysql.jdbc.Driver].newInstance()
         try {
@@ -84,7 +84,7 @@ class TargetDb (conf: Config = null, database_type: String, server: String, data
       }
       case "netezza" => {
         classOf[org.netezza.Driver].newInstance()
-        val conn = DriverManager.getConnection("jdbc:netezza://" + server + ":5480/" + name,
+        val conn = DriverManager.getConnection("jdbc:netezza://" + host + ":5480/" + name,
           username, password)
         Some(conn)
       }

@@ -1,37 +1,41 @@
 package com.datamountaineer.ingestor
 
+import java.io.File
+
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
-import ch.qos.logback.core.joran.spi.JoranException
-import ch.qos.logback.core.util.StatusPrinter
 import com.cloudera.sqoop.SqoopOptions
-import com.datamountaineer.ingestor.models.{SqoopJobDAO, SqoopJobSearchParameters, SqoopJob, JobMetaStorage}
+import com.datamountaineer.ingestor.models.{JobMetaStorage, SqoopJob, SqoopJobDAO, SqoopJobSearchParameters}
 import com.datamountaineer.ingestor.rest.Failure
 import com.datamountaineer.ingestor.sqoop.IngestSqoop
 import com.datamountaineer.ingestor.utils.Constants
+import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.{Configuration, Configured}
 import org.apache.hadoop.util.{Tool, ToolRunner}
 import org.apache.sqoop.tool.ImportTool
-import org.slf4j.{MDC, LoggerFactory}
+import org.slf4j.{MDC, Logger, LoggerFactory}
+
+
 
 object Ingestor extends Configured with Tool {
-  val log = LoggerFactory.getLogger("Ingestor")
+  val log : Logger = LoggerFactory.getLogger("Ingestor")
+  set_logger()
   val batch_size = 10
   val conn_jobs = new SqoopJobDAO()
   val storage = new JobMetaStorage
   storage.open()
+  val TEST_DIR : File = new File(System.getProperty("java.io.tmpdir"), "logbak-test-dir")
 
-  /**
-   * Dynamically sets the logfile name
-   *
-   * @param job_name Set the log file name for the job*/
-  def set_logger(job_name: String) = {
+
+  def set_logger() = {
+    //System.setProperty("appli.config.path", ClassLoader.getSystemClassLoader().getResource("logback.properties").getPath());
+    TEST_DIR.mkdirs()
+    FileUtils.cleanDirectory(TEST_DIR)
     val context: LoggerContext = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
     val configurator: JoranConfigurator = new JoranConfigurator()
     configurator.setContext(context)
     context.reset()
-    configurator.doConfigure(ClassLoader.getSystemClassLoader().getResource("logback.xml").getFile());
-    MDC.put("loggerFileName", job_name)
+    configurator.doConfigure(ClassLoader.getSystemClassLoader().getResource("logback.xml"))
   }
 
     /**
@@ -40,7 +44,8 @@ object Ingestor extends Configured with Tool {
       * @param job_name The name of the job to run
       */
   def execute_job (job_name: String) = {
-    set_logger(job_name)
+    MDC.put("loggerFileName", job_name)
+    log.info(MDC.get("loggerFileName"))
     val job_data = storage.read(job_name)
     val options =  job_data.getSqoopOptions
     //clone and set as parent. Sqoop uses this to reconstruct the job after execution.
@@ -162,7 +167,6 @@ object Ingestor extends Configured with Tool {
 
   override def run(strings: Array[String]): Int = {
     val conf = new Configuration()
-
     val res = {
       ToolRunner.run(conf, Ingestor, strings)
     }

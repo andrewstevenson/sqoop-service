@@ -1,10 +1,10 @@
 package com.datamountaineer.ingestor.sqoop
 
-import com.datamountaineer.ingestor.IngestorTest.unitTest
-import com.datamountaineer.ingestor.utils.Constants
-import com.datamountaineer.ingestor.{IngestorTest, IngestorTestTrait}
-import org.scalatest.BeforeAndAfter
-import org.scalatest.mock.MockitoSugar
+//import com.datamountaineer.ingestor.IngestorTest.unitTest
+//import com.datamountaineer.ingestor.utils.Constants
+//import com.datamountaineer.ingestor.{IngestorTest, IngestorTestTrait}
+//import org.scalatest.BeforeAndAfter
+//import org.scalatest.mock.MockitoSugar
 
 //class InitialiserTest extends IngestorTestTrait with BeforeAndAfter with MockitoSugar {
 //  val initialiser = Initialiser

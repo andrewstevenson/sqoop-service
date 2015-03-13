@@ -29,7 +29,7 @@ object Initialiser  extends Configuration {
   def initialise(db_type: String, server: String, database: String) = {
     var conn: Option[Connection] = null
     try {
-      val target_db = get_db_conf(db_type, server, database)
+      val target_db = get_db_conf(db_type=db_type, server=server, database = database)
       val query = target_db.get_query().replace("MY_DATABASE", database).replace("MY_SERVER", server)
       conn =  target_db.get_conn()
       conn match {
@@ -62,9 +62,11 @@ object Initialiser  extends Configuration {
       val db_list = for (db <- conf if db.name.equals(database)) yield db.asInstanceOf[TargetDb]
       if (db_list.size > 1) log.warn("Found more than one database called %s configured.".format(database))
       if (db_list.size == 0) {
-        log.error("Unable to get credentials for %s.".format(database))
+        log.warn("Unable to get credentials for %s from application.conf.".format(database))
+        new TargetDb(database_type=db_type, server=server, database=database)
+      } else {
+        db_list.head
       }
-      db_list.head
     } catch {
       case ce : com.typesafe.config.ConfigException => {
         new TargetDb(database_type=db_type, server=server, database=database)
