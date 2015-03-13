@@ -18,13 +18,16 @@ export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce
 export JAR_CLASSPATH=/${base}/../conf/:${SQOOP_SERVICE_JAR}:${SQOOP_HOME}/*:${HADOOP_HOME}/*:${HADOOP_HOME}/lib/*
 
 #${SQOOP_HOME}/lib/*
-if [[ "${type}" == "create" || "${type}" == "exec" ]]
+if [[ "${type}" == "create" || "${type}" == "exec:job" ]]
 then
     echo "Running sqoop:${type}:job ${job}"
-    hadoop jar ${SQOOP_SERVICE_JAR} ${INGESTOR_CLASS} sqoop:${type}:job ${job}
+    hadoop jar ${SQOOP_SERVICE_JAR} ${INGESTOR_CLASS} sqoop:${type} ${job}
+elif [[ "${type}" == "exec:database" ]]
+then
+    echo "Running sqoop:${type}:database ${job}"
+    hadoop jar ${SQOOP_SERVICE_JAR} ${INGESTOR_CLASS} sqoop:${type} ${job}
 elif [[ "${type}" == "initialise" ]]
 then
 echo "Initialising ${server}/${database}"
-#java ${JAVA_OPTS_CONF}
-java -cp ${JAR_CLASSPATH} ${INITIALISER_CLASS} ${db_type} ${server} ${database}
+    java -cp ${JAR_CLASSPATH} ${INITIALISER_CLASS} ${db_type} ${server} ${database}
 fi

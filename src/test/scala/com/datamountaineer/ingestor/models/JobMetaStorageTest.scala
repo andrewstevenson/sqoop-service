@@ -11,6 +11,8 @@ import org.scalatest.mock.MockitoSugar
 
 import scala.collection.JavaConversions._
 
+
+//TODO test create for job, job props and update
 class JobMetaStorageTest extends IngestorTestTrait with BeforeAndAfter with MockitoSugar {
   //mock storage
   val storage = new JobMetaStorage
@@ -82,6 +84,7 @@ class JobMetaStorageTest extends IngestorTestTrait with BeforeAndAfter with Mock
   val ep: Either[Failure, List[SqoopJobProp]] = Right(props)
 
   when(prop_dao.search(new SqoopJobPropParameters(job_name = Some(IngestorTest.TEST_JOB_NAME)))).thenReturn(ep)
+  //when(prop_dao.create(AnyRef[SqoopJobProp])).thenReturn()
 
   //mock prop_dao
   storage.set_conn_jobs(job_dao)
