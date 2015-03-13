@@ -8,10 +8,12 @@ import org.slf4j.LoggerFactory
 import scala.util.Try
 
 
-class TargetDb (conf: Config = None, db_type: String, server: String, database: String) {
+class TargetDb (conf: Config = null, database_type: String, server: String, database: String) {
 
   val name = database
-  val log = LoggerFactory.getLogger("DbConfig")
+  val host = server
+  val db_type = database_type
+  val log = LoggerFactory.getLogger("TargetDb")
   val username = Try(conf.getString("username")).getOrElse(get_env_credentials().get._1)
   val password = Try(conf.getString("password")).getOrElse(get_env_credentials().get._1)
 
@@ -48,17 +50,19 @@ class TargetDb (conf: Config = None, db_type: String, server: String, database: 
 
   def get_env_credentials() : Option[Pair[String, String]] = {
     //check environment variables
-    val env_pass = db_type.toUpperCase() + "_" + server.toUpperCase() + "_" + name.toUpperCase + "_PASS"
-    val env_usr = db_type.toUpperCase() + "_" + server.toUpperCase() + "_" + name.toUpperCase + "_USER"
-    val pass: String = System.getenv(env_pass)
-    val user: String = System.getenv(env_usr)
+    val env_pass = db_type.toUpperCase() + "_" + host.toUpperCase() + "_" + name.toUpperCase + "_PASS"
+    val env_usr = db_type.toUpperCase() + "_" + host.toUpperCase() + "_" + name.toUpperCase + "_USER"
+    val pass: Option[String] = Some(System.getenv(env_pass))
+    val user: Option[String] = Some(System.getenv(env_usr))
 
     if (pass.isEmpty || user.isEmpty) {
       log.error("Did not find database called %s in application.conf or environment variables %s and %s".format(name, env_usr, env_pass))
+      System.exit(-1)
       None
     }
     else {
-      Some(Pair(user, pass))
+      log.info("Found credentials in environment variables.")
+      Some(Pair(user.get, pass.get))
     }
   }
 
@@ -67,6 +71,7 @@ class TargetDb (conf: Config = None, db_type: String, server: String, database: 
     db_type.toLowerCase match {
       case "mysql" => {
         val conn_str = "jdbc:mysql://" + server + ":3306/" + name
+        log.info("Attempting to connect to %s with connection string %s".format(name, conn_str))
         classOf[com.mysql.jdbc.Driver].newInstance()
         try {
           val conn = DriverManager.getConnection(conn_str, username, password)

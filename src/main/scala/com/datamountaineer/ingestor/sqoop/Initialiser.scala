@@ -57,12 +57,18 @@ object Initialiser  extends Configuration {
 
   def get_db_conf(db_type: String, database: String, server: String) : TargetDb = {
     val conf_key = "%s.%s.dbs".format(db_type, server)
-    val conf : mutable.Buffer[TargetDb] = config.getConfigList(conf_key) map (new TargetDb(_, db_type, server, database))
-    val db_list = for (db <- conf if db.name.equals(database)) yield db.asInstanceOf[TargetDb]
-    if (db_list.size > 1) log.warn("Found more than one database called %s configured.".format(database))
-    if (db_list.size == 0) {
-      log.error("Unable to get credentials for %s.".format(database))
+    try {
+      val conf: mutable.Buffer[TargetDb] = config.getConfigList(conf_key) map (new TargetDb(_, db_type, server, database))
+      val db_list = for (db <- conf if db.name.equals(database)) yield db.asInstanceOf[TargetDb]
+      if (db_list.size > 1) log.warn("Found more than one database called %s configured.".format(database))
+      if (db_list.size == 0) {
+        log.error("Unable to get credentials for %s.".format(database))
+      }
+      db_list.head
+    } catch {
+      case ce : com.typesafe.config.ConfigException => {
+        new TargetDb(database_type=db_type, server=server, database=database)
+      }
     }
-    db_list.head
   }
 }
