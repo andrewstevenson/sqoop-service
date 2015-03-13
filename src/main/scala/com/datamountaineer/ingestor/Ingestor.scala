@@ -2,6 +2,8 @@ package com.datamountaineer.ingestor
 
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
+import ch.qos.logback.core.joran.spi.JoranException
+import ch.qos.logback.core.util.StatusPrinter
 import com.cloudera.sqoop.SqoopOptions
 import com.datamountaineer.ingestor.models.{SqoopJobDAO, SqoopJobSearchParameters, SqoopJob, JobMetaStorage}
 import com.datamountaineer.ingestor.rest.Failure
@@ -13,9 +15,11 @@ import org.apache.sqoop.tool.ImportTool
 import org.slf4j.{MDC, LoggerFactory}
 
 object Ingestor extends Configured with Tool {
-  val log = LoggerFactory.getLogger("ingestor")
+  val log = LoggerFactory.getLogger("Ingestor")
   val batch_size = 10
   val conn_jobs = new SqoopJobDAO()
+  val storage = new JobMetaStorage
+  storage.open()
 
   /**
    * Dynamically sets the logfile name
@@ -23,9 +27,10 @@ object Ingestor extends Configured with Tool {
    * @param job_name Set the log file name for the job*/
   def set_logger(job_name: String) = {
     val context: LoggerContext = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
-    val configurator: JoranConfigurator = new JoranConfigurator();
+    val configurator: JoranConfigurator = new JoranConfigurator()
     configurator.setContext(context)
     context.reset()
+    configurator.doConfigure(ClassLoader.getSystemClassLoader().getResource("logback.xml").getFile());
     MDC.put("loggerFileName", job_name)
   }
 
@@ -33,14 +38,10 @@ object Ingestor extends Configured with Tool {
       * Execute a sqoop job stored in the metastore
       *
       * @param job_name The name of the job to run
-      * @param storage The storage pointing to the metastore
       */
-  def execute_job (job_name: String, storage: JobMetaStorage) = {
-    //set_logger(job_name)
-    //read back our sqoop jobs to create a sqoop options
-    storage.open()
+  def execute_job (job_name: String) = {
+    set_logger(job_name)
     val job_data = storage.read(job_name)
-
     val options =  job_data.getSqoopOptions
     //clone and set as parent. Sqoop uses this to reconstruct the job after execution.
     val cloned_opts: SqoopOptions = options.clone().asInstanceOf[SqoopOptions]
@@ -52,14 +53,26 @@ object Ingestor extends Configured with Tool {
     tool.run(options)
   }
 
+  def batch (jobs : List[SqoopJob]) : List[Seq[SqoopJob]] = {
+    jobs.iterator.sliding(batch_size).toList
+  }
+
+  def execute_batch(batched :List[Seq[SqoopJob]]) = {
+    batched.foreach( sub_batch => {
+      //run each job in parallel
+      sub_batch.par.foreach( job => {
+        execute_job(job_name = job.job_name)
+      })
+    })
+  }
+
   /**
    * Execute all jobs (enabled) for a given database.
    * Jobs are batched and run in parallel. If no batch size set the default of 10 is used.
    *
    * @param database The database to find jobs for
-   * @param storage The storage pointing to the metastore
    * */
-  def execute_database(database : String, storage: JobMetaStorage, batch_size : Int = batch_size) = {
+  def execute_database(database : String, batch_size : Int = batch_size) = {
     val search = new SqoopJobSearchParameters(job_name=None, server = None, database = Some(database), table = None, enabled = Some(true))
     val jobs =  conn_jobs.search(search)
     jobs match {
@@ -70,15 +83,7 @@ object Ingestor extends Configured with Tool {
         if (jobs.size == 0) {
           log.warn("No jobs found for database %s".format(database))
         } else {
-          //batch the jobs
-          //List(List(job1, job2), List(job3,job4),.....
-          val batched = jobs.iterator.sliding(batch_size).toList
-          batched.foreach( sub_batch => {
-            //run each job in parallel
-            sub_batch.par.foreach( job => {
-              execute_job(job_name = job.job_name, storage = storage)
-            })
-          })
+          execute_batch(batch(jobs))
         }
       }
     }
@@ -93,15 +98,13 @@ object Ingestor extends Configured with Tool {
    * @return None
    */
   def process_sqoop(database: Option[String] = None, job_name: Option[String] = None, run_type: String, sqoop_options: Option[SqoopOptions] = None) = {
-    val storage = new JobMetaStorage
-    storage.open()
     run_type match {
       case "create" =>
         storage.create(sqoop_options.asInstanceOf[SqoopOptions])
       case "exec" =>
         database match {
-          case None => execute_job(job_name.get, storage)
-          case Some(database) => execute_database(database, storage)
+          case None => execute_job(job_name.get)
+          case Some(database) => execute_database(database)
         }
       case _ => log.error("Unsupported operation %s!".format(run_type))
     }

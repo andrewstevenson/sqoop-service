@@ -22,5 +22,5 @@ tar -zcvf sqoop-service-${version}.tar.gz sqoop-service-${version}
 scp sqoop-service-${version}.tar.gz ${me}@${target_server}:/${target_dir}
 ssh $me@${target_server} "rm -f -r ${target_dir}/sqoop-service-${version};
 tar -zxvf ${target_dir}/sqoop-service-${version}.tar.gz;"
-//sx su -; cp ${target_dir}/sqoop-service-${version}/sqoop-service-assembly-${version}.jar ${sqoop_home}/lib"
+#sx su -; cp ${target_dir}/sqoop-service-${version}/sqoop-service-assembly-${version}.jar ${sqoop_home}/lib"
 
