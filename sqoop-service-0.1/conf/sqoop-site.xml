@@ -1,0 +1,27 @@
+<!--suppress ALL -->
+<configuration>
+    <property>
+        <name>sqoop.metastore.client.enable.autoconnect</name>
+        <value>true</value>
+        <description>If true, Sqoop will connect to a local metastore
+            for job management when no other metastore arguments are
+            provided.
+        </description>
+    </property>
+    <property>
+        <name>sqoop.metastore.client.autoconnect.url</name>
+        <value>jdbc:mysql://localhost:3306/sqoop_metastore?createDatabaseIfNotExist=false</value>
+    </property>
+    <property>
+        <name>sqoop.metastore.client.autoconnect.username</name>
+        <value>sqoop</value>
+    </property>
+    <property>
+        <name>sqoop.metastore.client.autoconnect.password</name>
+        <value>sqoop</value>
+    </property>
+    <property>
+        <name>sqoop.job.storage.implementations</name>
+        <value>com.datamountaineer.ingestor.models.JobMetaStorage</value>
+    </property>
+</configuration>
