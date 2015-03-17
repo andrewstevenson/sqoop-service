@@ -25,12 +25,12 @@ libraryDependencies ++= {
   val logbackV= "1.0.13"
   Seq(
     "org.apache.sqoop" % "sqoop" % sqoopV % "provided",
-    "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided" excludeAll ExclusionRule(organization = "org.slf4j"),
-    "ch.qos.logback" % "logback-classic" % logbackV excludeAll ExclusionRule(organization = "org.slf4j"),
-    "io.spray" % "spray-http" % sprayV excludeAll ExclusionRule(organization = "org.slf4j"),
-    "com.typesafe.slick" %% "slick" % slickV excludeAll ExclusionRule(organization = "org.slf4j"),
-    "com.typesafe" % "config" % typeSafeV excludeAll ExclusionRule(organization = "org.slf4j"),
-    "mysql" % "mysql-connector-java" % mySqlV,
+    "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided",
+    "ch.qos.logback" % "logback-classic" % logbackV,
+    "io.spray" % "spray-http" % sprayV,
+    "com.typesafe.slick" %% "slick" % slickV,
+    "com.typesafe" % "config" % typeSafeV,
+    "mysql" % "mysql-connector-java" % mySqlV % "provided" ,
     "org.scalatest" % "scalatest_2.10" % "2.2.4" % "test",
     "org.mockito" % "mockito-core" % "1.8.5" % "test"
   ).map(_.force())
@@ -43,6 +43,7 @@ libraryDependencies ++= {
 
 unmanagedResourceDirectories in Compile <+= baseDirectory
 
-excludeFilter in unmanagedResources := HiddenFileFilter || "node_modules*" || "project*" || "target*" || "sqoop-*" || "lib" || "src/main/resources"
+excludeFilter in unmanagedResources := HiddenFileFilter || "node_modules*" || "project*" || "target*" || "sqoop-*" || "lib"
+//|| "src/main/resources/*.conf"
 
-//test in assembly := {}
+test in assembly := {}
