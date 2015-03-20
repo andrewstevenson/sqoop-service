@@ -24,22 +24,20 @@ libraryDependencies ++= {
   val mySqlV = "5.1.25"
   val logbackV= "1.0.13"
   Seq(
-    "org.apache.sqoop" % "sqoop" % sqoopV % "provided",
+    "org.apache.sqoop" % "sqoop" % sqoopV % "provided" excludeAll(ExclusionRule("org.kitesdk"),
+                                                                  ExclusionRule("com.twitter")),
     "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided",
     "ch.qos.logback" % "logback-classic" % logbackV,
+    "org.kitesdk" % "kite-data-hive" % "1.0.0" excludeAll(ExclusionRule("com.twitter")),
+    "org.kitesdk" % "kite-tools" % "1.0.0",
     "io.spray" % "spray-http" % sprayV,
     "com.typesafe.slick" %% "slick" % slickV,
     "com.typesafe" % "config" % typeSafeV,
-    "mysql" % "mysql-connector-java" % mySqlV % "provided" ,
+    "mysql" % "mysql-connector-java" % mySqlV ,
     "org.scalatest" % "scalatest_2.10" % "2.2.4" % "test",
     "org.mockito" % "mockito-core" % "1.8.5" % "test"
   ).map(_.force())
 }
-
-// ~= { _.map(_.excludeAll(ExclusionRule(organization = "org.slf4j"))) }
-//sbt-revolver plugin allows restarting the application when files change (including angular files in the /app folder)
-//Just run sbt or activator with the command `~ re-start` instead of `run`
-//Revolver.settings
 
 unmanagedResourceDirectories in Compile <+= baseDirectory
 

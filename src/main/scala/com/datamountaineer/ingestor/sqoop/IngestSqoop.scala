@@ -71,7 +71,7 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
     sqoop_options.setTargetDir(SqoopTargetDirPreFix + "/" +
       this.server + "/" +
       this.database + "/" +
-      sqoop_options.getTableName + "/run_date=YYYYMMDD")
+      sqoop_options.getTableName)
     //      +
     //      new SimpleDateFormat("YYYYMMdd").format(Calendar.getInstance().getTime))
     sqoop_options.setEscapedBy('\\')

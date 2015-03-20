@@ -40,5 +40,7 @@ trait Configuration {
   lazy val dbType = Try(config.getString("sqoop.db.type")).toOption.orNull
 
   lazy val SqoopTargetDirPreFix = Try(config.getString("sqoop.target_dir_prefix")).toOption.orNull
+
+  lazy val ScrubbedRepoDir = Try(config.getString("repo.scrubbed_root")).getOrElse("/data/scrubbed")
 }
 

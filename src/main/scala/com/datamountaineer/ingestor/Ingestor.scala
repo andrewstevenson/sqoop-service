@@ -1,43 +1,26 @@
 package com.datamountaineer.ingestor
 
-import java.io.File
-
-import ch.qos.logback.classic.LoggerContext
-import ch.qos.logback.classic.joran.JoranConfigurator
 import com.cloudera.sqoop.SqoopOptions
+import com.datamountaineer.ingestor.evo.Merger
 import com.datamountaineer.ingestor.models.{JobMetaStorage, SqoopJob, SqoopJobDAO, SqoopJobSearchParameters}
 import com.datamountaineer.ingestor.rest.Failure
 import com.datamountaineer.ingestor.sqoop.IngestSqoop
 import com.datamountaineer.ingestor.utils.Constants
-import org.apache.commons.io.FileUtils
+import org.apache.avro.Schema
 import org.apache.hadoop.conf.{Configuration, Configured}
 import org.apache.hadoop.util.{Tool, ToolRunner}
-import org.apache.sqoop.tool.ImportTool
-import org.slf4j.{MDC, Logger, LoggerFactory}
+import org.apache.sqoop.manager.{DirectMySQLManager, DirectNetezzaManager, MySQLManager, NetezzaManager}
+import org.apache.sqoop.orm.AvroSchemaGenerator
+import org.slf4j.{Logger, LoggerFactory, MDC}
 
 
 
-object Ingestor extends Configured with Tool {
+object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.conf.Configuration {
   val log : Logger = LoggerFactory.getLogger("Ingestor")
-  set_logger()
   val batch_size = 10
   val conn_jobs = new SqoopJobDAO()
   val storage = new JobMetaStorage
   storage.open()
-  val TEST_DIR : File = new File(System.getProperty("java.io.tmpdir"), "logbak-test-dir")
-
-
-  def set_logger() = {
-    //System.setProperty("appli.config.path", ClassLoader.getSystemClassLoader().getResource("logback.properties").getPath());
-    TEST_DIR.mkdirs()
-    FileUtils.cleanDirectory(TEST_DIR)
-    val context: LoggerContext = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
-    val configurator: JoranConfigurator = new JoranConfigurator()
-    configurator.setContext(context)
-    context.reset()
-    configurator.doConfigure(ClassLoader.getSystemClassLoader().getResource("logback.xml"))
-  }
-
     /**
       * Execute a sqoop job stored in the metastore
       *
@@ -45,17 +28,41 @@ object Ingestor extends Configured with Tool {
       */
   def execute_job (job_name: String) = {
     MDC.put("loggerFileName", job_name)
-    log.info(MDC.get("loggerFileName"))
     val job_data = storage.read(job_name)
     val options =  job_data.getSqoopOptions
     //clone and set as parent. Sqoop uses this to reconstruct the job after execution.
     val cloned_opts: SqoopOptions = options.clone().asInstanceOf[SqoopOptions]
       options.setParent(cloned_opts)
     //make sure we use our metastore
-      options.getConf.set(Constants.STORAGE_IMPLEMENTATION_KEY, Constants.STORAGE_IMPLEMENTATION_CLASS)
-    val tool = new ImportTool()
+    options.getConf.set(Constants.STORAGE_IMPLEMENTATION_KEY, Constants.STORAGE_IMPLEMENTATION_CLASS)
+    merge(options)
+
+    //val tool = new ImportTool()
     //run the sqoop!!
-    tool.run(options)
+    //tool.run(options)
+  }
+
+  def get_avro_schema(db_type : String, options: SqoopOptions) : Schema = {
+    val conn = db_type match {
+      case "mysql" => {
+        if (options.isDirect) new MySQLManager(options) else new DirectMySQLManager(options)
+      }
+      case "netezza" => {
+        if (options.isDirect) new NetezzaManager(options) else new DirectNetezzaManager(options)
+      }
+    }
+    val avro = new AvroSchemaGenerator(options, conn, options.getTableName)
+    log.info("Connecting to %s to generate Avro schema for %s".format(options.getConnectString, options.getTableName))
+    avro.generate()
+  }
+
+  def merge(options: SqoopOptions) = {
+    val database = options.getJobName.split(":")(2)
+    val db_type = options.getJobName.split(":")(0)
+    val schema = get_avro_schema(db_type, options)
+    val repo_root = ScrubbedRepoDir
+    val merger = new Merger(schema = schema, path = repo_root, database= database, name = options.getTableName)
+    merger.merge(schema)
   }
 
   def batch (jobs : List[SqoopJob]) : List[Seq[SqoopJob]] = {
