@@ -1,5 +1,7 @@
 package com.datamountaineer.ingestor
 
+import java.util
+
 import com.cloudera.sqoop.SqoopOptions
 import com.datamountaineer.ingestor.evo.Merger
 import com.datamountaineer.ingestor.models.{JobMetaStorage, SqoopJob, SqoopJobDAO, SqoopJobSearchParameters}
@@ -7,12 +9,16 @@ import com.datamountaineer.ingestor.rest.Failure
 import com.datamountaineer.ingestor.sqoop.IngestSqoop
 import com.datamountaineer.ingestor.utils.Constants
 import org.apache.avro.Schema
+import org.apache.avro.Schema.Field
 import org.apache.hadoop.conf.{Configuration, Configured}
 import org.apache.hadoop.util.{Tool, ToolRunner}
 import org.apache.sqoop.manager.{DirectMySQLManager, DirectNetezzaManager, MySQLManager, NetezzaManager}
 import org.apache.sqoop.orm.AvroSchemaGenerator
+import org.codehaus.jackson.node.NullNode
 import org.slf4j.{Logger, LoggerFactory, MDC}
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 
 
 object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.conf.Configuration {
@@ -43,6 +49,7 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
   }
 
   def get_avro_schema(db_type : String, options: SqoopOptions) : Schema = {
+    val table_name = options.getTableName
     val conn = db_type match {
       case "mysql" => {
         if (options.isDirect) new MySQLManager(options) else new DirectMySQLManager(options)
@@ -52,8 +59,25 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
       }
     }
     val avro = new AvroSchemaGenerator(options, conn, options.getTableName)
-    log.info("Connecting to %s to generate Avro schema for %s".format(options.getConnectString, options.getTableName))
-    avro.generate()
+    log.info("Connecting to %s to generate Avro schema for %s".format(options.getConnectString, table_name))
+    val schema = avro.generate()
+
+    //now add default value (set to null for sqoop)
+    val old_fields : util.List[Field] = schema.getFields
+    var new_fields = new ListBuffer[Field]()
+
+    for( field : Field <- old_fields) {
+      val new_field : Field = new Field(field.name(), field.schema(), null, NullNode.getInstance())
+      new_field.addProp("columnName", field.getProp("columnName"))
+      new_field.addProp("sqlType", field.getProp("sqlType"))
+      new_fields += new_field
+    }
+
+    val doc : String = "Sqoop import of " + table_name
+    val new_schema : Schema = Schema.createRecord(table_name, doc, null, false)
+    new_schema.setFields(new_fields.asJava)
+    new_schema.addProp("tableName", table_name)
+    new_schema
   }
 
   def merge(options: SqoopOptions) = {
