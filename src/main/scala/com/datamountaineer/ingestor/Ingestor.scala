@@ -19,6 +19,7 @@ import org.slf4j.{Logger, LoggerFactory, MDC}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
+import scala.collection.JavaConversions._
 
 
 object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.conf.Configuration {
@@ -66,12 +67,13 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
     val old_fields : util.List[Field] = schema.getFields
     var new_fields = new ListBuffer[Field]()
 
-    for( field : Field <- old_fields) {
+    old_fields.foreach( field => {
       val new_field : Field = new Field(field.name(), field.schema(), null, NullNode.getInstance())
       new_field.addProp("columnName", field.getProp("columnName"))
       new_field.addProp("sqlType", field.getProp("sqlType"))
       new_fields += new_field
-    }
+
+    })
 
     val doc : String = "Sqoop import of " + table_name
     val new_schema : Schema = Schema.createRecord(table_name, doc, null, false)
