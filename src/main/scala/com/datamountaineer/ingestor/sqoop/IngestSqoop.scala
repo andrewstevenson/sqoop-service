@@ -72,8 +72,6 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
       this.server + "/" +
       this.database + "/" +
       sqoop_options.getTableName)
-    //      +
-    //      new SimpleDateFormat("YYYYMMdd").format(Calendar.getInstance().getTime))
     sqoop_options.setEscapedBy('\\')
 
     //avro/parquet not supported for netzza and teradata
