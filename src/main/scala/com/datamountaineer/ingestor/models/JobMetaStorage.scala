@@ -18,8 +18,6 @@ import scala.collection.JavaConversions._
 import scala.util.{Left, Right}
 
 //noinspection ScalaDeprecation
-//noinspection ScalaDeprecation
-//noinspection ScalaDeprecation
 class JobMetaStorage() extends JobStorage  {
  // val log = LoggerFactory.getLogger(classOf[JobMetaStorage])
   val log = LoggerFactory.getLogger("JobMetaStorage")
@@ -302,6 +300,7 @@ class JobMetaStorage() extends JobStorage  {
    * 
    * @param sqoop_options The SqoopOptions to persist to sqoop_job_props
    * */
+  //noinspection ScalaDeprecation
   @throws(classOf[IOException])
   //own implementation
   def create(sqoop_options: SqoopOptions) = {

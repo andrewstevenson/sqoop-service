@@ -32,7 +32,7 @@ libraryDependencies ++= {
     "ch.qos.logback" % "logback-classic" % logbackV,
    // "org.kitesdk" % "kite-data-hive" % "1.0.0" excludeAll(ExclusionRule("com.twitter")),
     "org.kitesdk" % "kite-data-core" % "1.0.0" excludeAll(ExclusionRule("org.kitesdk", "kite-data-hive"), ExclusionRule("com.twitter")),
-    "org.kitesdk" % "kite-tools" % "1.0.0"  excludeAll(ExclusionRule("org.kitesdk", "kite-data-hive"), ExclusionRule("com.twitter"))ui,
+    "org.kitesdk" % "kite-tools" % "1.0.0"  excludeAll(ExclusionRule("org.kitesdk", "kite-data-hive"), ExclusionRule("com.twitter")),
     "io.spray" % "spray-http" % sprayV,
     "com.typesafe.slick" %% "slick" % slickV,
     "com.typesafe" % "config" % typeSafeV,

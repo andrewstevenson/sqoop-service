@@ -14,6 +14,7 @@ import org.slf4j.{Logger, LoggerFactory, MDC}
 //noinspection ScalaDeprecation
 //noinspection ScalaDeprecation
 //noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
 object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.conf.Configuration {
   val log : Logger = LoggerFactory.getLogger(this.getClass)
   val batch_size = 10
@@ -60,6 +61,7 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
    * @param sqoop_options A SqoopOptions to store in the metastore. If run_type is create not used to can be null
    * @return None
    */
+  //noinspection ScalaDeprecation
   def process_sqoop(database: Option[String] = None, job_name: Option[String] = None, run_type: String, sqoop_options: Option[SqoopOptions] = None) = {
     run_type match {
       case "create" =>
