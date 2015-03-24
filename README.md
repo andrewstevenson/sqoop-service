@@ -111,7 +111,7 @@ E.g.
 
 NOTE: The sqoop username is set to `sqoop`. I'll make this configurable later.
 
-The current setup accepts 3 run types:
+The current setup accepts 4 run types:
 
 ##initialise
 
