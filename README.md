@@ -32,7 +32,7 @@ Some organisations only support MySQL, Oracle or Sql Server. This often gives th
 
 Additionaly I want to expose viewing, creating an changing jobs via Spray and AngualarJS so I want to be in control of the metastore definitions, hence I extend JobStorage.
 
-You can also interact with via the Sqoop CLI. For this to work you need to set the `sqoop.job.storage.implementations` properties in the sqoop-site.xml and add it to the HADOOP_CLASSPATH.
+You can also interact via the Sqoop CLI. For this to work you need to set the `sqoop.job.storage.implementations` properties in the sqoop-site.xml and add it to the HADOOP_CLASSPATH.
 
 ```
 export HADOOP_CLASSPATH=sqoop-site.xml
@@ -113,9 +113,11 @@ NOTE: The sqoop username is set to `sqoop`. I'll make this configurable later.
 
 The current setup accepts 3 run types:
 
-1. initialise
+##initialise
 
  This run type initialises jobs for each table found in the target database. It attempts to select the best column to split on and defaults the import type to incremental based on the split. For MySQL an auto increment column is looked for. On Netezza the distribution key is checked. It's important to note this is a best guess. If a suitable column is not found the job is tagged a disabled.
+
+ There's always room for improvement here, should probably also check primary keys and their types. It's on a best effort basis for now.
 
 To run the initialiser to pre-populate the jobs run `sqoop-runner.sh run_type db_type server database`. For example against a mysql run
 
@@ -123,7 +125,7 @@ To run the initialiser to pre-populate the jobs run `sqoop-runner.sh run_type db
 bin/sqoop-runner.sh initialise mysql mysql-server target_database
 ```
 
-2. create
+##create
 
  This run type creates a job. It expects a `:` separated list of parameters in the form db_type:server:database:tablename:split_by_col:num_mappers:check_col:last_val
 
@@ -133,7 +135,7 @@ bin/sqoop-runner.sh initialise mysql mysql-server target_database
  bin/sqoop-runner.sh create mysql:localhost:my_db:my_table:my_auto_incr_col:4:my_auto_incr_col:0
  ```
 
-3. exec:job
+##exec:job
 
 This run type executes the job given as a parameter.
 
@@ -141,7 +143,7 @@ This run type executes the job given as a parameter.
 bin/sqoop-runner.sh exec:job mysql:localhost:my_db:my_table
 ```
 
-4. exec:database
+##exec:database
 
 This run type executes all enabled jobs for a database in parallel in batches of 10.
 
@@ -152,6 +154,10 @@ bin/sqoop-runner.sh exec:database my_database
 
 #TODO
 
-Mode unit tests and intergration.
-Convert jdbc to slick for initialiser
-Switch execution to use akka. Create a pool based on batch size and push sqoops to it. Akka routing maybe. Currently the code batches the list of jobs into a List[List[job1, job2, ..., job10], List[job11, job12]]. For each list in the list I execute the job in parallel using scala parallel collections but I'm still blocked by a long job potentially in the first list.
+1.  More unit tests and integration.
+2.  Convert jdbc to slick for initialiser
+3.  Switch execution to use akka. Create a pool based on batch size and push sqoops to it. Akka routing maybe. Currently the code batches the list of jobs into a List[List[job1, job2, ..., job10], List[job11, job12]]. For each list in the list I execute the job in parallel using scala parallel collections but I'm still blocked by a long job potentially in the first list.
+4.  Add sql server/oracle and teradata support.
+5.  Support multiple incremental check cols?
+6.  Clean up logging - remove log4j from classpath
+7.  Web front end.
