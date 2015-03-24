@@ -50,8 +50,8 @@ class TargetDb (conf: Config = null, database_type: String, server: String, data
 
   def get_env_credentials() : Option[Pair[String, String]] = {
     //check environment variables
-    val env_pass = db_type.toUpperCase() + "_" + host.toUpperCase() + "_" + name.toUpperCase + "_PASS"
-    val env_usr = db_type.toUpperCase() + "_" + host.toUpperCase() + "_" + name.toUpperCase + "_USER"
+    val env_pass = db_type.toUpperCase + "_" + host.toUpperCase + "_" + name.toUpperCase + "_PASS"
+    val env_usr = db_type.toUpperCase + "_" + host.toUpperCase + "_" + name.toUpperCase + "_USER"
     val pass: Option[String] = Some(System.getenv(env_pass))
     val user: Option[String] = Some(System.getenv(env_usr))
 
@@ -69,7 +69,7 @@ class TargetDb (conf: Config = null, database_type: String, server: String, data
 
   def get_conn() : Option[Connection] = {
     db_type.toLowerCase match {
-      case "mysql" => {
+      case "mysql" =>
         val conn_str = "jdbc:mysql://" + host + ":3306/" + name
         log.info("Attempting to connect to %s with connection string %s".format(name, conn_str))
         classOf[com.mysql.jdbc.Driver].newInstance()
@@ -81,13 +81,11 @@ class TargetDb (conf: Config = null, database_type: String, server: String, data
             log.error(e.getMessage, new IOException)
             throw e
         }
-      }
-      case "netezza" => {
+      case "netezza" =>
         classOf[org.netezza.Driver].newInstance()
         val conn = DriverManager.getConnection("jdbc:netezza://" + host + ":5480/" + name,
           username, password)
         Some(conn)
-      }
     }
   }
 

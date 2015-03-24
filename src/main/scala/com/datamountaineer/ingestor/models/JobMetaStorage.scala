@@ -17,6 +17,9 @@ import org.apache.hadoop.conf.Configuration
 import scala.collection.JavaConversions._
 import scala.util.{Left, Right}
 
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
 class JobMetaStorage() extends JobStorage  {
  // val log = LoggerFactory.getLogger(classOf[JobMetaStorage])
   val log = LoggerFactory.getLogger("JobMetaStorage")

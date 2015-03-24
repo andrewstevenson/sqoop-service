@@ -11,6 +11,9 @@ import org.apache.hadoop.util.{Tool, ToolRunner}
 import org.apache.sqoop.tool.ImportTool
 import org.slf4j.{Logger, LoggerFactory, MDC}
 
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
 object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.conf.Configuration {
   val log : Logger = LoggerFactory.getLogger(this.getClass)
   val batch_size = 10
@@ -38,15 +41,13 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
     job_type match {
       case "sqoop:exec:job" =>
         process_sqoop( job_name = Some(args(1).toString), run_type = "exec")
-      case "sqoop:exec:database" => {
+      case "sqoop:exec:database" =>
         process_sqoop(database = Some(args(1).toString), run_type = "exec")
-      }
-      case "sqoop:create:job" => {
+      case "sqoop:create:job" =>
         val sqoop_options: SqoopOptions = new IngestSqoop(args(1).toString, true).build_sqoop_options()
         val job_name = args(1).split(":").take(4) mkString ":"
         log.info("Trying to create job called %s'.".format(job_name))
         process_sqoop(job_name = Some(job_name), run_type = "create", sqoop_options = Some(sqoop_options))
-      }
       case _ => log.error("Bollocks!")
     }
   }
@@ -61,11 +62,10 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
    */
   def process_sqoop(database: Option[String] = None, job_name: Option[String] = None, run_type: String, sqoop_options: Option[SqoopOptions] = None) = {
     run_type match {
-      case "create" => {
+      case "create" =>
         val storage = new JobMetaStorage
         storage.open()
         storage.create(sqoop_options.asInstanceOf[SqoopOptions])
-      }
       case "exec" =>
         database match {
           case None => execute_job(job_name.get)
@@ -86,16 +86,14 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
     val search = new SqoopJobSearchParameters(job_name=None, server = None, database = Some(database), table = None, enabled = Some(true))
     val jobs =  conn_jobs.search(search)
     jobs match {
-      case Left(failure: Failure) => {
+      case Left(failure: Failure) =>
         log.error(failure.message)
-      }
-      case Right(jobs : List[SqoopJob]) => {
+      case Right(jobs : List[SqoopJob]) =>
         if (jobs.size == 0) {
           log.warn("No jobs found for database %s".format(database))
         } else {
           execute_batch(batch(jobs))
         }
-      }
     }
   }
 

@@ -13,10 +13,9 @@ import org.slf4j.{LoggerFactory, Logger}
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
 
-
-/**
- * Created by andrew on 24/03/15.
- */
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
 object AvroUtilsHelper {
   val log : Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -26,12 +25,12 @@ object AvroUtilsHelper {
   @return The none null schema type from the union
     */
   def get_non_null(schema : Schema) = {
-    if (schema.getType().equals(Schema.Type.UNION)) {
+    if (schema.getType.equals(Schema.Type.UNION)) {
       val schemas: util.List[Schema] = schema.getTypes
       if (schemas.size() == 2) {
-        if (schemas.get(0).getType().equals(Schema.Type.NULL)) {
+        if (schemas.get(0).getType.equals(Schema.Type.NULL)) {
           schemas.get(1)
-        } else if (schemas.get(1).getType().equals(Schema.Type.NULL)) {
+        } else if (schemas.get(1).getType.equals(Schema.Type.NULL)) {
           schemas.get(0)
         } else {
           schema
@@ -57,12 +56,10 @@ object AvroUtilsHelper {
   def get_avro_schema(db_type : String, options: SqoopOptions) : Schema = {
     val table_name = options.getTableName
     val conn = db_type match {
-      case "mysql" => {
+      case "mysql" =>
         if (options.isDirect) new MySQLManager(options) else new DirectMySQLManager(options)
-      }
-      case "netezza" => {
+      case "netezza" =>
         if (options.isDirect) new NetezzaManager(options) else new DirectNetezzaManager(options)
-      }
     }
     val avro = new AvroSchemaGenerator(options, conn, options.getTableName)
     log.info("Connecting to %s to generate Avro schema for %s".format(options.getConnectString, table_name))

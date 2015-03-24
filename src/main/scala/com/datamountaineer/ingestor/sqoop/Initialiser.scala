@@ -34,7 +34,7 @@ object Initialiser  extends Configuration {
       conn =  target_db.get_conn()
       conn match {
         case None => log.error("Could not connect to database %s on %s".format(database, server))
-        case _ => {
+        case _ =>
           val stmt = conn.get.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
           val rs: ResultSet = stmt.executeQuery(query)
           val storage = new JobMetaStorage
@@ -46,7 +46,6 @@ object Initialiser  extends Configuration {
             //call ingestor to create the
             storage.create(sqoop_options)
           }
-        }
       }
     }
     finally {
@@ -68,9 +67,8 @@ object Initialiser  extends Configuration {
         db_list.head
       }
     } catch {
-      case ce : com.typesafe.config.ConfigException => {
+      case ce : com.typesafe.config.ConfigException =>
         new TargetDb(database_type=db_type, server=server, database=database)
-      }
     }
   }
 }

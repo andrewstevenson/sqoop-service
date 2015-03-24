@@ -7,6 +7,9 @@ import com.datamountaineer.ingestor.utils.Constants
 import org.slf4j.LoggerFactory
 
 
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
 class IngestSqoop(input: String, incr: Boolean) extends Configuration {
   val log = LoggerFactory.getLogger(classOf[IngestSqoop])
   val params: Map[String, String] = extract_sqoop_params(input, incr)

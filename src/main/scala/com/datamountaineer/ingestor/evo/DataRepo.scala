@@ -12,6 +12,9 @@ import org.kitesdk.data.spi.{DatasetRepositories, DatasetRepository, SchemaUtil}
 import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.JavaConversions._
 
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
+//noinspection ScalaDeprecation
 class DataRepo(schema: Schema, path: String, database: String, name: String) extends Configured {
 
   val log : Logger = LoggerFactory.getLogger(this.getClass)
@@ -86,7 +89,7 @@ class DataRepo(schema: Schema, path: String, database: String, name: String) ext
       jc.parse("csv-import", hdfs_path.toString, dataset.getName, "--namespace", dataset.getNamespace, "--header", header)
       val parsed: String = jc.getParsedCommand
       val command: Command = jc.getCommands.get(parsed).getObjects.get(0).asInstanceOf[Command]
-      (command.asInstanceOf[Configurable]).setConf(conf)
+      command.asInstanceOf[Configurable].setConf(conf)
       command.run()
     } else {
       log.warn("No input directory found: %s.".format(hdfs_path.toString))
