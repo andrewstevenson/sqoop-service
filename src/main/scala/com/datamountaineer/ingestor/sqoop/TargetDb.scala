@@ -4,13 +4,13 @@ import java.io.IOException
 import java.sql.{DriverManager, Connection}
 
 import com.typesafe.config.Config
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 import scala.util.Try
 
 
 class TargetDb (conf: Config = null, database_type: String, server: String, database: String) {
 
-  val log = LoggerFactory.getLogger("TargetDb")
+  val log : Logger = LoggerFactory.getLogger(this.getClass)
   val name = Try(conf.getString("name")).getOrElse(database)
   val host = server
   val db_type = database_type

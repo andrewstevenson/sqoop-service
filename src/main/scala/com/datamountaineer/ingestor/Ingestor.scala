@@ -1,6 +1,7 @@
 package com.datamountaineer.ingestor
 
 import com.cloudera.sqoop.SqoopOptions
+import com.cloudera.sqoop.SqoopOptions.FileLayout
 import com.datamountaineer.ingestor.evo.DataRepo
 import com.datamountaineer.ingestor.models.{JobMetaStorage, SqoopJob, SqoopJobDAO, SqoopJobSearchParameters}
 import com.datamountaineer.ingestor.rest.Failure
@@ -9,11 +10,9 @@ import com.datamountaineer.ingestor.utils.{AvroUtilsHelper, Constants}
 import org.apache.hadoop.conf.{Configuration, Configured}
 import org.apache.hadoop.util.{Tool, ToolRunner}
 import org.apache.sqoop.tool.ImportTool
+import org.kitesdk.data.Datasets
 import org.slf4j.{Logger, LoggerFactory, MDC}
 
-//noinspection ScalaDeprecation
-//noinspection ScalaDeprecation
-//noinspection ScalaDeprecation
 //noinspection ScalaDeprecation
 object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.conf.Configuration {
   val log : Logger = LoggerFactory.getLogger(this.getClass)
@@ -61,7 +60,7 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
    * @param sqoop_options A SqoopOptions to store in the metastore. If run_type is create not used to can be null
    * @return None
    */
-  //noinspection ScalaDeprecation
+
   def process_sqoop(database: Option[String] = None, job_name: Option[String] = None, run_type: String, sqoop_options: Option[SqoopOptions] = None) = {
     run_type match {
       case "create" =>
@@ -117,13 +116,19 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
     options.getConf.set(Constants.STORAGE_IMPLEMENTATION_KEY, Constants.STORAGE_IMPLEMENTATION_CLASS)
     val tool = new ImportTool()
     //run the sqoop!!
-    tool.run(options)
-    //merge schema and load kite dataset
-    load_dataset(options)
+    val rc = tool.run(options)
+    if (rc.equals(0)) {
+      log.info("-----------------------------------------------")
+      log.info("Beginning update of Hive repo and load.")
+      //merge schema and load kite dataset
+      load_dataset(options)
+    } else {
+      log.error("Sqoop failed!", new UnknownError)
+    }
   }
 
   /**
-   * Load a CSV files from Sqoop in HDFS to a dataset
+   * Load Sqoop output into to a dataset
    *
    * @param options SqoopOptions for the job
    * */
@@ -131,11 +136,26 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
     val database = options.getJobName.split(":")(2)
     val db_type = options.getJobName.split(":")(0)
     val dataset_name = options.getTableName
+    //get schema of target database and update
     val schema = AvroUtilsHelper.get_avro_schema(db_type, options)
-    val loader = new DataRepo(schema = schema, path = ScrubbedRepoDir, database= database, name = dataset_name )
-    val dataset = loader.create(database, dataset_name)
-    loader.merge(schema, dataset)
-    loader.load_csv(input_schema = schema, input_path = options.getTargetDir, dataset = dataset, options.getConf)
+    val dataset = DataRepo.create_hive_dataset(ScrubbedRepoDir, database, dataset_name, schema)
+    //DataRepo.update_schema(schema, dataset)
+    options.getFileLayout match
+    {
+//      case FileLayout.TextFile =>
+//        DataRepo.load2(input_schema = schema, input_path = options.getTargetDir, dataset = dataset, options.getConf)
+//      case FileLayout.AvroDataFile =>
+//        DataRepo.load_avro(input_schema = schema, input_path = options.getTargetDir, target_dataset = dataset)
+      case FileLayout.ParquetFile =>
+        val input_dataset = DataRepo.get_dataset(options.getTargetDir)
+        input_dataset match {
+          case None => log.warn("No dataset found for %s".format(options.getTargetDir))
+          case _ =>  DataRepo.load_dataset(input_dataset = input_dataset.get, target_dataset = dataset, conf = options.getConf)
+            input_dataset.get.deleteAll()
+            Datasets.delete(input_dataset.get.getUri)
+        }
+      case _ => log.error("Unsupported Sqoop file type: " + options.getFileLayout.toString)
+    }
   }
 
   /**

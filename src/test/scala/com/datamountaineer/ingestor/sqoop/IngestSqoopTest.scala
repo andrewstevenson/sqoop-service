@@ -1,7 +1,7 @@
 package com.datamountaineer.ingestor.sqoop
 
 import com.cloudera.sqoop.SqoopOptions
-import com.cloudera.sqoop.SqoopOptions.IncrementalMode
+import com.cloudera.sqoop.SqoopOptions.{FileLayout, IncrementalMode}
 import com.datamountaineer.ingestor.IngestorTest.unitTest
 import com.datamountaineer.ingestor.utils.Constants
 import com.datamountaineer.ingestor.{IngestorTest, IngestorTestTrait}
@@ -43,8 +43,11 @@ class IngestSqoopTest extends IngestorTestTrait with BeforeAndAfter with Mockito
     "have table name set" taggedAs unitTest in {
       assert(OPTIONS.getTableName === IngestorTest.TEST_TABLE)
     }
-    "have direct mode set" taggedAs unitTest in {
-      assert(OPTIONS.isDirect, true)
+    "not have direct mode set" taggedAs unitTest in {
+      assert(OPTIONS.isDirect === false)
+    }
+    "have file type set to Parquet" taggedAs unitTest in {
+      assert(OPTIONS.getFileLayout === FileLayout.ParquetFile)
     }
     "be incremental" taggedAs unitTest in {
       assert(OPTIONS.getIncrementalMode === IncrementalMode.AppendRows)

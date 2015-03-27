@@ -4,13 +4,13 @@ import com.datamountaineer.ingestor.conf.Configuration
 import com.datamountaineer.ingestor.models.JobMetaStorage
 
 import java.sql.{Connection, ResultSet}
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 object Initialiser  extends Configuration {
-  val log = LoggerFactory.getLogger("Initialiser")
+  val log : Logger = LoggerFactory.getLogger(this.getClass)
 
   def main(args: Array[String]) {
     if (args == null || args.length < 3) {

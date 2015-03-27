@@ -2,40 +2,65 @@ package com.datamountaineer.ingestor.evo
 
 import com.beust.jcommander.JCommander
 import org.apache.avro.Schema
+import org.apache.avro.generic.GenericData
+import org.apache.crunch.PipelineResult
 import org.apache.hadoop.conf.{Configurable, Configuration, Configured}
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.record.Record
 import org.kitesdk.cli.Command
 import org.kitesdk.cli.commands.CSVImportCommand
 import org.kitesdk.data._
-import org.kitesdk.data.spi.{DatasetRepositories, DatasetRepository, SchemaUtil}
+import org.kitesdk.data.spi._
+import org.kitesdk.tools.CopyTask
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.collection.JavaConversions._
 
-//noinspection ScalaDeprecation
-//noinspection ScalaDeprecation
-//noinspection ScalaDeprecation
-class DataRepo(schema: Schema, path: String, database: String, name: String) extends Configured {
-
+object DataRepo extends Configured {
   val log : Logger = LoggerFactory.getLogger(this.getClass)
-  val dataset_path = path + "/" + database + "/" + name
-  val root_path = path
-  val repo : DatasetRepository = DatasetRepositories.repositoryFor("repo:hive:" + root_path)
 
   /**
    * Create a hive dataset in the repo
    * 
+   * @param repo_root The root location of the repo
    * @param database The database to create the dataset(table) in.
    * @param name The dataset/table name                
    * */
-  def create(database: String, name: String) :  Dataset[Record]  = {
+  def create_hive_dataset(repo_root: String,
+                          database: String,
+                          name: String,
+                          schema: Schema) : Dataset[GenericData.Record] = {
+    val repo : DatasetRepository = DatasetRepositories.repositoryFor("repo:hive:" + repo_root)
+    
     if (!repo.exists(database, name)) {
-      log.info("Creating dataset at %s with schema %s".format(path, schema.toString(true)))
+      log.info("Creating dataset at %s with schema %s"
+        .format(repo_root + "/" + database + "/" + name, schema.toString(true)))
       repo.create(database, name, new DatasetDescriptor.Builder().format(Formats.PARQUET).schema(schema).build)
-      repo.load(database, name).asInstanceOf[Dataset[Record]]
+      repo.load(database, name).asInstanceOf[Dataset[GenericData.Record]]
     } else {
-      log.info("Dataset at %s already exists.".format(dataset_path))
-      repo.load(database, name).asInstanceOf[Dataset[Record]]
+      log.info("Dataset at %s already exists.".format(repo_root + "/" + database + "/" + name))
+      val dataset = repo.load(database, name).asInstanceOf[Dataset[GenericData.Record]]
+      val updated = update_schema(schema, dataset)
+      updated match {
+        case None => dataset
+        case _ => updated.get
+      }
+    }
+  }
+
+  /**
+   * Create a dataset under the specified path
+   *
+   * @param path The path to the create the dataset in.
+   * */
+  def create_dataset(path: String, schema: Schema, storage_type : Format) :  Dataset[GenericData.Record]  = {
+    val source_dataset: String = "dataset:hdfs:" + path
+
+    if (!Datasets.exists(source_dataset.toString)) {
+      Datasets.create(source_dataset, new DatasetDescriptor.Builder().format(storage_type)
+        .schema(schema)
+        .build, classOf[GenericData.Record])
+    } else {
+      Datasets.load(source_dataset.toString, classOf[GenericData.Record])
     }
   }
 
@@ -45,14 +70,20 @@ class DataRepo(schema: Schema, path: String, database: String, name: String) ext
    * @param source_schema The new inbound schema to update the dataset with
    * @param dataset The dataset to update                     
    * */
-  def merge(source_schema: Schema, dataset : Dataset[Record]) = {
+  def update_schema(source_schema: Schema,
+                    dataset : Dataset[GenericData.Record]) : Option[Dataset[GenericData.Record]] = {
     val target_descriptor = dataset.getDescriptor
     val target_schema = target_descriptor.getSchema
 
-    if (!repo.exists(database, name)) log.error("Dataset %s not found".format(dataset_path))
+    if (!Datasets.exists(dataset.getUri)) {
+      log.error("Dataset %s not found".format(dataset.getName))
+      exit
+      None
+    }
     else {
       if (source_schema == target_schema) {
         log.info("No change in schemas detected.")
+        None
       }
       else {
         log.info("Change in schemas detected. Schemas will be merged and dataset updated.")
@@ -63,20 +94,20 @@ class DataRepo(schema: Schema, path: String, database: String, name: String) ext
         val updated_descriptor: DatasetDescriptor = new DatasetDescriptor.Builder(target_descriptor)
           .schema(new_schema)
           .build()
-        repo.update(database, name, updated_descriptor)
+        Some(Datasets.update(dataset.getUri, updated_descriptor))
       }
     }
   }
 
   /**
    * Load a HDFS directory containing CSV text into a dataset
-   * 
+   *
    * @param input_schema A avro schema describing the source. Used to construct CSV header
    * @param input_path The directory in HDFS containing the CSV's
    * @param dataset The dataset to load
-   * @param conf Configuration               
+   * @param conf Configuration
    * */
-  def load_csv(input_schema: Schema, input_path: String, dataset : Dataset[Record], conf: Configuration ) = {
+  def load_csv(input_schema: Schema, input_path: String, dataset : Dataset[GenericData.Record], conf: Configuration ) = {
     val fs = new Path(input_path).getFileSystem(conf)
     val hdfs_path: Path = fs.makeQualified(new Path("hdfs:" + input_path))
 
@@ -86,13 +117,47 @@ class DataRepo(schema: Schema, path: String, database: String, name: String) ext
       val header = field_names.mkString(",")
       val jc = new JCommander()
       jc.addCommand("csv-import", new CSVImportCommand(log))
-      jc.parse("csv-import", hdfs_path.toString, dataset.getName, "--namespace", dataset.getNamespace, "--header", header)
+      jc.parse("csv-import", hdfs_path.toString, dataset.getName, "--namespace", dataset.getNamespace,
+        "--header", header)//, "--transform", "com.datamountaineer.ingestor.transformations.TransformNULL")
       val parsed: String = jc.getParsedCommand
       val command: Command = jc.getCommands.get(parsed).getObjects.get(0).asInstanceOf[Command]
       command.asInstanceOf[Configurable].setConf(conf)
       command.run()
     } else {
       log.warn("No input directory found: %s.".format(hdfs_path.toString))
-    }  
+    }
+  }
+
+  /**
+   * Load a an existing dataset into a target dataset
+   *
+   * @param input_dataset The input dataset
+   * @param target_dataset The dataset to load
+   * */
+  def load_dataset(input_dataset: Dataset[GenericData.Record],
+                   target_dataset : Dataset[GenericData.Record],
+                   conf: Configuration) : Int = {
+    val source: View[GenericData.Record] = input_dataset
+    val dest: View[GenericData.Record] = target_dataset
+
+    val task: CopyTask[_] = new CopyTask[GenericData.Record](source, dest)
+    task.setConf(conf)
+    val result: PipelineResult = task.run
+
+    if (result.succeeded) {
+      log.info("Added {} records to \"{}\"", task.getCount, target_dataset.getUri)
+      return 0
+    }
+    else {
+      return 1
+    }
+  }
+  
+  def get_dataset(input_path: String) :  Option[Dataset[GenericData.Record]] = {
+      if (Datasets.exists("dataset:hdfs:" + input_path)) {
+        Some(Datasets.load(("dataset:hdfs:" + input_path), classOf[GenericData.Record]).asInstanceOf[Dataset[GenericData.Record]])
+      } else {
+        None
+      }
   }
 }

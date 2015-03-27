@@ -9,7 +9,7 @@ import com.cloudera.sqoop.metastore.{JobData, JobStorage}
 import com.cloudera.sqoop.tool.SqoopTool
 import com.datamountaineer.ingestor.rest.Failure
 import com.datamountaineer.ingestor.utils.Constants
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 //import org.apache.commons.logging.{Log, LogFactory}
 import org.apache.hadoop.conf.Configuration
@@ -19,8 +19,7 @@ import scala.util.{Left, Right}
 
 //noinspection ScalaDeprecation
 class JobMetaStorage() extends JobStorage  {
- // val log = LoggerFactory.getLogger(classOf[JobMetaStorage])
-  val log = LoggerFactory.getLogger("JobMetaStorage")
+ val log : Logger = LoggerFactory.getLogger(this.getClass)
 
   //get Data access objects for sqoop_jobs and sqpop_job_props
   var conn_jobs : SqoopJobDAO = _
@@ -67,7 +66,8 @@ class JobMetaStorage() extends JobStorage  {
     //check on second attribute to see if job exists
     job._2 match {
       case false =>
-        log.error("Job " + job_name + " does not exist!")
+        log.warn("Job " + job_name + " does not exist!")
+        exit(1)
         null
       case true =>
         //create search parameters for DAO

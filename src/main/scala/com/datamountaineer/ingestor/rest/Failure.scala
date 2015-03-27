@@ -1,6 +1,6 @@
 package com.datamountaineer.ingestor.rest
 
-import spray.http.{StatusCodes, StatusCode}
+import spray.http.{StatusCode, StatusCodes}
 
 /**
  * Service failure description.

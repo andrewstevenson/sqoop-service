@@ -14,8 +14,6 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConversions._
 
 //noinspection ScalaDeprecation
-//noinspection ScalaDeprecation
-//noinspection ScalaDeprecation
 object AvroUtilsHelper {
   val log : Logger = LoggerFactory.getLogger(this.getClass)
 

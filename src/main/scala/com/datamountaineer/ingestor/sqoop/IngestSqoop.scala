@@ -4,14 +4,12 @@ import com.cloudera.sqoop.SqoopOptions
 import com.cloudera.sqoop.SqoopOptions.{FileLayout, IncrementalMode}
 import com.datamountaineer.ingestor.conf.Configuration
 import com.datamountaineer.ingestor.utils.Constants
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 
-//noinspection ScalaDeprecation
-//noinspection ScalaDeprecation
 //noinspection ScalaDeprecation
 class IngestSqoop(input: String, incr: Boolean) extends Configuration {
-  val log = LoggerFactory.getLogger(classOf[IngestSqoop])
+  val log : Logger = LoggerFactory.getLogger(this.getClass)
   val params: Map[String, String] = extract_sqoop_params(input, incr)
 
   private val db_type: String = params.get(Constants.DB_TYPE_KEY).get
@@ -68,7 +66,7 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
     sqoop_options.setIncrementalMode(IncrementalMode.AppendRows)
     sqoop_options.setIncrementalTestColumn(params.get(Constants.CHECK_BY_KEY).get)
     sqoop_options.setIncrementalLastValue(params.get(Constants.LAST_VAL_KEY).get)
-    sqoop_options.setAppendMode(true)
+    //sqoop_options.setAppendMode(true)
     sqoop_options.setSplitByCol(this.split_by)
     sqoop_options.setNumMappers(this.mappers)
     sqoop_options.setTargetDir(SqoopTargetDirPreFix + "/" +
@@ -78,22 +76,29 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
     sqoop_options.setEscapedBy('\\')
 
     //avro/parquet not supported for netzza and teradata
-    if (this.db_type == Constants.NETEZZA ||
-      this.db_type == Constants.ORACLE ||
-      this.db_type == Constants.TERADATA ||
-      this.db_type == Constants.SQL_SERVER ||
-      this.db_type == Constants.MYSQL) {
-      sqoop_options.setDirectMode(true)
-      sqoop_options.setFileLayout(FileLayout.TextFile)
-      //sqoop_options.setCompressionCodec("com.hadoop.compression.lzo.LzopCodec")
-    }
-    else {
-      sqoop_options.setHiveDropDelims(true)
-      sqoop_options.setFileLayout(FileLayout.AvroDataFile)
-      sqoop_options.setCompressionCodec(Constants.SNAPPY_CODEC)
-    }
+//    if (this.db_type == Constants.NETEZZA ||
+//      this.db_type == Constants.ORACLE ||
+//      this.db_type == Constants.TERADATA ||
+//      this.db_type == Constants.SQL_SERVER) {
+//      sqoop_options.setDirectMode(true)
+//      sqoop_options.setFileLayout(FileLayout.TextFile)
+//      //sqoop_options.setCompressionCodec("com.hadoop.compression.lzo.LzopCodec")
+//    }
+//    else {
+//      sqoop_options.setHiveDropDelims(true)
+//      //switch to avro once https://issues.apache.org/jira/browse/SQOOP-2252 is fixed
+//      sqoop_options.setFileLayout(FileLayout.TextFile)
+//      //sqoop_options.setCompressionCodec(Constants.SNAPPY_CODEC)
+//    }
+    //ignore direct mode now till can sort out text to parquet via kite
+    sqoop_options.setDirectMode(false)
+    sqoop_options.setFileLayout(FileLayout.ParquetFile)
+    sqoop_options.setCompressionCodec(Constants.SNAPPY_CODEC)
+    sqoop_options.setHiveDropDelims(true)
     sqoop_options.setUsername("sqoop")
     sqoop_options.setPasswordFilePath("/secure/" + server + "/" + database + ".conf")
+    sqoop_options.setNullNonStringValue("")
+    sqoop_options.setNullStringValue("")
     sqoop_options
   }
 }

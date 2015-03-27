@@ -18,7 +18,7 @@ This component can perform the following:
 
 1.  Initialises sqoop jobs in a shared MySQL backed metastore for either target RDBMS of type MySQL or Netezza. (Others easily added)
     This can also be rerun on a daily basis to pick up new tables on the target database.
-2.  Create individual sqoop jobs and store them in the shared metastore. Choosing the optimal options where appropriate.
+2.  Create individual sqoop jobs and store them in the shared metastore. Choosing the optimal options where appropriate. Currently for MySQL Text and no direct mode is used. MySQL dump has no option for handling nulls so if you use the direct mode and have nulls in your target database you'll get NULL in you files which causes type conversion errors in Kite. To compromise I'll use Avro (better than TEXT) but this can only happen when https://issues.apache.org/jira/browse/SQOOP-2252 is fixed. By me.
 3.  Exec stored sqoop jobs, creating HIVE external tables backed by Kite SDK.
 4.  Exec all jobs in batches for a database.
 

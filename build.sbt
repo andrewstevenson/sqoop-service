@@ -11,8 +11,6 @@ scalacOptions := Seq("-unchecked", "+deprecation", "-encoding", "utf8", "-featur
 resolvers ++= Seq(
   "spray repo" at "http://repo.spray.io/",
   "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
-//  "cloudera" at "https://repository.cloudera.com/content/repositories/releasess/",
-//  "cloudera public" at "https://repository.cloudera.com/artifactory/public/",
   "cloudera repo" at "https://repository.cloudera.com/artifactory/repo"
 )
 
@@ -25,18 +23,26 @@ libraryDependencies ++= {
   val sqoopV = "1.4.5-cdh5.3.2"
   val mySqlV = "5.1.25"
   val logbackV= "1.0.13"
+  val kiteSDKV= "1.0.0"
   Seq(
-    "org.apache.sqoop" % "sqoop" % sqoopV % "provided" excludeAll(ExclusionRule("org.kitesdk"),
-                                                                 ExclusionRule("com.twitter")),
-    "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided",
-    "ch.qos.logback" % "logback-classic" % logbackV,
-   // "org.kitesdk" % "kite-data-hive" % "1.0.0" excludeAll(ExclusionRule("com.twitter")),
-    "org.kitesdk" % "kite-data-core" % "1.0.0" excludeAll(ExclusionRule("org.kitesdk", "kite-data-hive"), ExclusionRule("com.twitter")),
-    "org.kitesdk" % "kite-tools" % "1.0.0"  excludeAll(ExclusionRule("org.kitesdk", "kite-data-hive"), ExclusionRule("com.twitter")),
-    "io.spray" % "spray-http" % sprayV,
-    "com.typesafe.slick" %% "slick" % slickV,
-    "com.typesafe" % "config" % typeSafeV,
-    "mysql" % "mysql-connector-java" % mySqlV ,
+    "org.apache.sqoop" % "sqoop" % sqoopV % "provided" excludeAll(ExclusionRule("org.kitesdk"),ExclusionRule("com.twitter"), ExclusionRule("org.slf4j")),
+    "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided" excludeAll(ExclusionRule("org.slf4j")),
+    "ch.qos.logback" % "logback-classic" % logbackV % "provided",
+    "org.kitesdk" % "kite-data-mapreduce" % kiteSDKV,// excludeAll(ExclusionRule("org.kitesdk", "kite-data-hive"), ExclusionRule("com.twitter"), ExclusionRule("org.slf4j")),
+    "org.kitesdk" % "kite-tools" % kiteSDKV  excludeAll(ExclusionRule("org.kitesdk", "kite-data-hive"), ExclusionRule("com.twitter"), ExclusionRule("org.slf4j")),
+    "io.spray" % "spray-http" % sprayV excludeAll(ExclusionRule("org.slf4j")),
+    "io.spray" %   "spray-servlet"     % sprayV excludeAll(ExclusionRule("org.slf4j")),
+    "io.spray" %   "spray-routing"     % sprayV excludeAll(ExclusionRule("org.slf4j")),
+    "io.spray" %   "spray-testkit"     % sprayV excludeAll(ExclusionRule("org.slf4j")),
+    "io.spray" %   "spray-client"      % sprayV excludeAll(ExclusionRule("org.slf4j")),
+    "io.spray" %   "spray-util"        % sprayV excludeAll(ExclusionRule("org.slf4j")),
+    "io.spray" %   "spray-caching"     % sprayV excludeAll(ExclusionRule("org.slf4j")),
+    "io.spray" %   "spray-can" % sprayV excludeAll(ExclusionRule("org.slf4j")),
+    "com.typesafe.akka"   %%  "akka-slf4j"        % "2.1.4" excludeAll(ExclusionRule("org.slf4j")),
+    "net.liftweb" %% "lift-json" % "2.5.1" excludeAll(ExclusionRule("org.slf4j")),
+    "com.typesafe.slick" %% "slick" % slickV excludeAll(ExclusionRule("org.slf4j")),
+    "com.typesafe" % "config" % typeSafeV excludeAll(ExclusionRule("org.slf4j")),
+    "mysql" % "mysql-connector-java" % mySqlV excludeAll(ExclusionRule("org.slf4j")),
     "org.scalatest" % "scalatest_2.10" % "2.2.4" % "test",
     "org.mockito" % "mockito-core" % "1.8.5" % "test"
   ).map(_.force())
