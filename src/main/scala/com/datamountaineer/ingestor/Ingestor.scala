@@ -139,20 +139,21 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
     //get schema of target database and update
     val schema = AvroUtilsHelper.get_avro_schema(db_type, options)
     val dataset = DataRepo.create_hive_dataset(ScrubbedRepoDir, database, dataset_name, schema)
-    //DataRepo.update_schema(schema, dataset)
     options.getFileLayout match
     {
-//      case FileLayout.TextFile =>
-//        DataRepo.load2(input_schema = schema, input_path = options.getTargetDir, dataset = dataset, options.getConf)
-//      case FileLayout.AvroDataFile =>
-//        DataRepo.load_avro(input_schema = schema, input_path = options.getTargetDir, target_dataset = dataset)
       case FileLayout.ParquetFile =>
         val input_dataset = DataRepo.get_dataset(options.getTargetDir)
         input_dataset match {
           case None => log.warn("No dataset found for %s".format(options.getTargetDir))
-          case _ =>  DataRepo.load_dataset(input_dataset = input_dataset.get, target_dataset = dataset, conf = options.getConf)
-            input_dataset.get.deleteAll()
-            Datasets.delete(input_dataset.get.getUri)
+          case _ =>
+            val rc = DataRepo.load_dataset(input_dataset = input_dataset.get, target_dataset = dataset, conf = options.getConf)
+            rc match {
+              case 0 =>
+                input_dataset.get.deleteAll()
+                Datasets.delete(input_dataset.get.getUri)
+              case 1 => log.error("Error copying sqoop dataset to target!")
+            }
+
         }
       case _ => log.error("Unsupported Sqoop file type: " + options.getFileLayout.toString)
     }

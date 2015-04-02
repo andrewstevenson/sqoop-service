@@ -81,11 +81,11 @@ class TargetDb (conf: Config = null, database_type: String, server: String, data
             log.error(e.getMessage, new IOException)
             throw e
         }
-      case "netezza" =>
-        classOf[org.netezza.Driver].newInstance()
-        val conn = DriverManager.getConnection("jdbc:netezza://" + host + ":5480/" + name,
-          username, password)
-        Some(conn)
+//      case "netezza" =>
+//        classOf[org.netezza.Driver].newInstance()
+//        val conn = DriverManager.getConnection("jdbc:netezza://" + host + ":5480/" + name,
+//          username, password)
+//        Some(conn)
     }
   }
 

@@ -63,10 +63,12 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
       this.server + "/" +
       this.database)
     sqoop_options.setTableName(this.table_name)
-    sqoop_options.setIncrementalMode(IncrementalMode.AppendRows)
-    sqoop_options.setIncrementalTestColumn(params.get(Constants.CHECK_BY_KEY).get)
-    sqoop_options.setIncrementalLastValue(params.get(Constants.LAST_VAL_KEY).get)
-    //sqoop_options.setAppendMode(true)
+    //check for incremental, if set to nothing default to full import
+    if (!params.get(Constants.CHECK_BY_KEY).get.equals("")) {
+      sqoop_options.setIncrementalMode(IncrementalMode.AppendRows)
+      sqoop_options.setIncrementalTestColumn(params.get(Constants.CHECK_BY_KEY).get)
+      sqoop_options.setIncrementalLastValue(params.get(Constants.LAST_VAL_KEY).get)
+    }
     sqoop_options.setSplitByCol(this.split_by)
     sqoop_options.setNumMappers(this.mappers)
     sqoop_options.setTargetDir(SqoopTargetDirPreFix + "/" +

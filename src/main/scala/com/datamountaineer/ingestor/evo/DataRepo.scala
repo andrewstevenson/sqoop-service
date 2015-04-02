@@ -23,7 +23,8 @@ object DataRepo extends Configured {
    * 
    * @param repo_root The root location of the repo
    * @param database The database to create the dataset(table) in.
-   * @param name The dataset/table name                
+   * @param name The dataset/table name
+   * @return a Dataset
    * */
   def create_hive_dataset(repo_root: String,
                           database: String,
@@ -51,6 +52,8 @@ object DataRepo extends Configured {
    * Create a dataset under the specified path
    *
    * @param path The path to the create the dataset in.
+   * @param storage_type The storage type for the dataset.
+   * @return a Dataset
    * */
   def create_dataset(path: String, schema: Schema, storage_type : Format) :  Dataset[GenericData.Record]  = {
     val source_dataset: String = "dataset:hdfs:" + path
@@ -68,7 +71,8 @@ object DataRepo extends Configured {
    * Update a dataset with a merged avro schema
    * 
    * @param source_schema The new inbound schema to update the dataset with
-   * @param dataset The dataset to update                     
+   * @param dataset The dataset to update
+   * @return The updated dataset
    * */
   def update_schema(source_schema: Schema,
                     dataset : Dataset[GenericData.Record]) : Option[Dataset[GenericData.Record]] = {
@@ -133,15 +137,20 @@ object DataRepo extends Configured {
    *
    * @param input_dataset The input dataset
    * @param target_dataset The dataset to load
+   * @param conf Configuration
+   * @return an Int return code
    * */
   def load_dataset(input_dataset: Dataset[GenericData.Record],
                    target_dataset : Dataset[GenericData.Record],
                    conf: Configuration) : Int = {
     val source: View[GenericData.Record] = input_dataset
     val dest: View[GenericData.Record] = target_dataset
+    conf.set("crunch.log.job.progress", "true")
+    conf.set("crunch.debug", "true")
 
     val task: CopyTask[_] = new CopyTask[GenericData.Record](source, dest)
     task.setConf(conf)
+    task.noCompaction
     val result: PipelineResult = task.run
 
     if (result.succeeded) {
@@ -152,7 +161,13 @@ object DataRepo extends Configured {
       return 1
     }
   }
-  
+
+  /**
+   * Returns the dataset located at the input path
+   *
+   * @param input_path The location on the dataset
+   * @return The dataset
+   * */
   def get_dataset(input_path: String) :  Option[Dataset[GenericData.Record]] = {
       if (Datasets.exists("dataset:hdfs:" + input_path)) {
         Some(Datasets.load(("dataset:hdfs:" + input_path), classOf[GenericData.Record]).asInstanceOf[Dataset[GenericData.Record]])
