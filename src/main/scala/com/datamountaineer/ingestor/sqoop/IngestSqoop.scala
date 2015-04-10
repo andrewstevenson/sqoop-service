@@ -70,7 +70,6 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
     sqoop_options.setNumMappers(mappers)
     sqoop_options.setTargetDir(SqoopTargetDirPreFix + "/" + server + "/" + database + "/" + sqoop_options.getTableName)
     sqoop_options.setEscapedBy('\\')
-    sqoop_options.setAppendMode(true)
 
     //avro/parquet not supported for netzza and teradata
 //    if (this.db_type == Constants.NETEZZA ||
@@ -94,10 +93,6 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
     sqoop_options.setHiveDropDelims(true)
     sqoop_options.setNullNonStringValue("")
     sqoop_options.setNullStringValue("")
-    sqoop_options.setUpdateKiteDataSet(true)
-    sqoop_options.setHiveImport(true)
-    sqoop_options.setHiveTableName(table_name)
-    sqoop_options.setHiveDatabaseName(database)
     sqoop_options
   }
 }
