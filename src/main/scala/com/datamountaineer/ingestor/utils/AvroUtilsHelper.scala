@@ -70,7 +70,7 @@ object AvroUtilsHelper {
     fields.foreach(field => {
       //switch union to be [null, type]. What do we set as the default otherwise, this way can set null
       val new_types : util.List[Schema] = List(Schema.create(Schema.Type.NULL), Schema.create(get_non_null(field.schema()).getType))
-      val new_field : Field = new Field(field.name(), Schema.createUnion(new_types), null, NullNode.getInstance())
+      val new_field : Field = new Field(field.name().toLowerCase, Schema.createUnion(new_types), null, NullNode.getInstance())
       new_fields += new_field
     })
 

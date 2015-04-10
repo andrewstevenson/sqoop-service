@@ -58,24 +58,19 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
     val sqoop_options: SqoopOptions = new SqoopOptions()
     sqoop_options.setJobName(db_type + Constants.SPILT_DELIMITER + server + Constants.SPILT_DELIMITER + database +
       Constants.SPILT_DELIMITER + table_name)
-    sqoop_options.setConnectString("jdbc:" +
-      this.db_type + "://" +
-      this.server + "/" +
-      this.database)
-    sqoop_options.setTableName(this.table_name)
+    sqoop_options.setConnectString("jdbc:" + db_type + "://" + server + "/" +  database)
+    sqoop_options.setTableName(table_name)
     //check for incremental, if set to nothing default to full import
     if (!params.get(Constants.CHECK_BY_KEY).get.equals("")) {
       sqoop_options.setIncrementalMode(IncrementalMode.AppendRows)
       sqoop_options.setIncrementalTestColumn(params.get(Constants.CHECK_BY_KEY).get)
       sqoop_options.setIncrementalLastValue(params.get(Constants.LAST_VAL_KEY).get)
     }
-    sqoop_options.setSplitByCol(this.split_by)
-    sqoop_options.setNumMappers(this.mappers)
-    sqoop_options.setTargetDir(SqoopTargetDirPreFix + "/" +
-      this.server + "/" +
-      this.database + "/" +
-      sqoop_options.getTableName)
+    sqoop_options.setSplitByCol(split_by)
+    sqoop_options.setNumMappers(mappers)
+    sqoop_options.setTargetDir(SqoopTargetDirPreFix + "/" + server + "/" + database + "/" + sqoop_options.getTableName)
     sqoop_options.setEscapedBy('\\')
+    sqoop_options.setAppendMode(true)
 
     //avro/parquet not supported for netzza and teradata
 //    if (this.db_type == Constants.NETEZZA ||
@@ -97,52 +92,12 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
     sqoop_options.setFileLayout(FileLayout.ParquetFile)
     sqoop_options.setCompressionCodec(Constants.SNAPPY_CODEC)
     sqoop_options.setHiveDropDelims(true)
-    sqoop_options.setUsername("sqoop")
-    sqoop_options.setPasswordFilePath("/secure/" + server + "/" + database + ".conf")
     sqoop_options.setNullNonStringValue("")
     sqoop_options.setNullStringValue("")
+    sqoop_options.setUpdateKiteDataSet(true)
+    sqoop_options.setHiveImport(true)
+    sqoop_options.setHiveTableName(table_name)
+    sqoop_options.setHiveDatabaseName(database)
     sqoop_options
   }
 }
-
-//class ingestSqoopOozie(incremental: Boolean = false, params: Map[String, String])
-//  extends ingestSqoop(incremental, params) {
-//  private val USER_NAME_TL: ThreadLocal[String] = new ThreadLocal[String]
-//  private val USER_NAME: String = "user.name"
-//  private val NAME_NODE: String = "name_node"
-//  private val JOB_TRACKER: String = "job_tracker"
-//  private val LIBPATH: String = "oozie.use.system.libpath"
-//  private val WF_RERUN: String = "oozie.wf.rerun.failnodes"
-//
-//  val conf : Properties = new Properties()
-//  var user_name: String = USER_NAME_TL.get
-//  if (user_name == null) {
-//    user_name = System.getProperty("user.name")
-//  }
-//
-//  conf.setProperty("root_dir", "/core/applications/oozie/wrappers/ingest/sqoop/")
-//  conf.setProperty("options_file", "${root_dir}/sqoop_options")
-//  conf.setProperty("target_dir", "/DATA/staging/" + this.server + "/" + this.database + "/" + this.table + "/"
-//    + "/run_date=" + this.timestamp.toString)
-//  conf.setProperty("password_file", "${root_dir}/sqoop_options/" + this.server + "/" + this.database +
-//    "/secure/conn.secure")
-//  conf.setProperty("connection", this.connection_string)
-//  conf.setProperty("target_dir", this.target_dir)
-//  conf.setProperty("split_by", this.split_by)
-//  conf.setProperty("num_mappers", this.mappers)
-//
-//  if (this.incr_flag) {
-//    conf.setProperty(OozieClient.APP_PATH, "${root_dir}/sqoop_import_incr_workflow.xml")
-//  }
-//  else {
-//    conf.setProperty(OozieClient.APP_PATH, "${root_dir}/sqoop_import_workflow.xml")
-//    val where: String = ""
-//    conf.setProperty("query", "SELECT * FROM " + this.table + where)
-//  }
-//
-//  conf.setProperty(USER_NAME, user_name)
-//  conf.setProperty(NAME_NODE, "hdfs://" + params.get("hdfs_name_service").toString)
-//  conf.setProperty(JOB_TRACKER, params.get("yarn_name_service").toString)
-//  conf.setProperty(LIBPATH, "true")
-//  conf.setProperty(WF_RERUN, "true")
-//}

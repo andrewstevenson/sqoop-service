@@ -42,5 +42,9 @@ trait Configuration {
   lazy val SqoopTargetDirPreFix = Try(config.getString("sqoop.target_dir_prefix")).toOption.orNull
 
   lazy val ScrubbedRepoDir = Try(config.getString("repo.scrubbed_root")).getOrElse("/data/scrubbed")
+
+  lazy val MySQLInitialiserSQL = Try(config.getString("initialiser.mysql.queries")).getOrElse("")
+
+  lazy val NetezzaInitialiserSQL = Try(config.getString("initialiser.netezza.queries")).getOrElse("")
 }
 

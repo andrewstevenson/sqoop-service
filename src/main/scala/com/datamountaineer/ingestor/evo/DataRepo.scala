@@ -98,6 +98,7 @@ object DataRepo extends Configured {
         val updated_descriptor: DatasetDescriptor = new DatasetDescriptor.Builder(target_descriptor)
           .schema(new_schema)
           .build()
+        dataset.getDescriptor.getSchema
         Some(Datasets.update(dataset.getUri, updated_descriptor))
       }
     }

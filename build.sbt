@@ -25,9 +25,10 @@ libraryDependencies ++= {
   val logbackV= "1.0.13"
   val kiteSDKV= "1.0.0"
   Seq(
-    "org.apache.sqoop" % "sqoop" % sqoopV % "provided" excludeAll(ExclusionRule("org.kitesdk"),ExclusionRule("com.twitter"), ExclusionRule("org.slf4j")),
+    "org.apache.sqoop" % "sqoop" % sqoopV excludeAll(ExclusionRule("org.kitesdk"),ExclusionRule("com.twitter"), ExclusionRule("org.slf4j")),
     "org.apache.hadoop" % "hadoop-common" % hadoopV % "provided" excludeAll(ExclusionRule("org.slf4j")),
     "ch.qos.logback" % "logback-classic" % logbackV % "provided",
+    //once Kite 1.1 is out set kite sdk to provided.
     "org.kitesdk" % "kite-data-mapreduce" % kiteSDKV,// excludeAll(ExclusionRule("org.kitesdk", "kite-data-hive"), ExclusionRule("com.twitter"), ExclusionRule("org.slf4j")),
     "org.kitesdk" % "kite-tools" % kiteSDKV  excludeAll(ExclusionRule("org.kitesdk", "kite-data-hive"), ExclusionRule("com.twitter"), ExclusionRule("org.slf4j")),
     "io.spray" % "spray-http" % sprayV excludeAll(ExclusionRule("org.slf4j")),
@@ -50,7 +51,7 @@ libraryDependencies ++= {
 
 unmanagedResourceDirectories in Compile <+= baseDirectory
 
-excludeFilter in unmanagedResources := HiddenFileFilter || "node_modules*" || "project*" || "target*" || "sqoop-*" || "lib*"
+excludeFilter in unmanagedResources := HiddenFileFilter || "node_modules*" || "project*" || "target*" || "sqoop-*"// || "lib*"
 //|| "src/main/resources/*.conf"
 
 test in assembly := {}

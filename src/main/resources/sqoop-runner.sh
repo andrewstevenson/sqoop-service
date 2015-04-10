@@ -27,4 +27,6 @@ elif [[ "${type}" == "initialise" ]]
 then
 echo "Initialising ${server}/${database}"
     java -cp ${JAR_CLASSPATH} ${INITIALISER_CLASS} ${db_type} ${server} ${database}
+else
+    echo "Unknown run type " ${type}
 fi

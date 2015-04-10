@@ -1,52 +1,26 @@
 package com.datamountaineer.ingestor.sqoop
 
 import java.io.IOException
-import java.sql.{DriverManager, Connection}
+import java.sql.{Connection, DriverManager}
 
-import com.typesafe.config.Config
+import com.datamountaineer.ingestor.conf.Configuration
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.util.Try
 
-
-class TargetDb (conf: Config = null, database_type: String, server: String, database: String) {
+class TargetDb (database_type: String, server: String, database: String) extends Configuration {
 
   val log : Logger = LoggerFactory.getLogger(this.getClass)
-  val name = Try(conf.getString("name")).getOrElse(database)
+  val name = database
   val host = server
   val db_type = database_type
-  val username = Try(conf.getString("username")).getOrElse(get_env_credentials().get._1)
-  val password = Try(conf.getString("password")).getOrElse(get_env_credentials().get._1)
 
-  /*
-  * WHAT TO REPLACE THIS WITH SLICK!!!!!!
-  *
-  * */
-  val mysql_query = "SELECT DISTINCT " +
-    "t.table_name " +
-    ", CONCAT_WS(':'" +
-    ", 'mysql'" +
-    ", @@hostname" +
-    ", t.table_schema" +
-    ", t.table_name " +
-    ", IFNULL(c.column_name, '') " +
-    ", '4'" +
-    ", IFNULL(c.column_name, '')" +
-    ", 0 ) AS input " +
-    "FROM information_schema.tables t " +
-    "LEFT OUTER JOIN information_schema.columns c " +
-    "ON t.table_name = c.table_name " +
-    "AND extra LIKE '%auto_increment%'" +
-    "WHERE t.table_schema = \"MY_DATABASE\";"
-
-  val netezza_query = "SELECT DISTINCT " +
-    "t.tablename AS table_name " +
-    ", 'netezza:MY_SERVER:' || t.database || ':' ||  t.tablename || ':' || ISNULL(d.attname, '') || ':8:' || " +
-    "ISNULL(d.attname, '') || ':0' AS input " +
-    "FROM _v_table t " +
-    "LEFT OUTER JOIN _v_table_dist_map d " +
-    "ON t.tablename = d.tablename AND t.database = d.database " +
-    "LEFT OUTER JOIN _v_relation_column c " +
-    "ON d.database = c.database AND t.objid = c.objid AND c.format_type = 'BIGINT'"
+  val username = Try(config.getString(database_type.toLowerCase + "." + serviceHost.toLowerCase + "." +
+    database.toLowerCase + ".username")).getOrElse(get_env_credentials().get._1)
+  val password = Try(config.getString(database_type.toLowerCase + "." + serviceHost.toLowerCase + "." +
+    database.toLowerCase + ".password")).getOrElse(get_env_credentials().get._2)
+  val mysql_query =  Try(config.getString("initialiser.query.mysql")).getOrElse("")
+  val netezza_query =  Try(config.getString("initialiser.query.netezza")).getOrElse("")
 
   def get_env_credentials() : Option[Pair[String, String]] = {
     //check environment variables
@@ -56,7 +30,8 @@ class TargetDb (conf: Config = null, database_type: String, server: String, data
     val user: Option[String] = Some(System.getenv(env_usr))
 
     if (pass.get == null || user.get == null) {
-      log.error("Did not find database called %s in application.conf or environment variables %s and %s".format(name, env_usr, env_pass))
+      log.error("Did not find database called %s in application.conf or environment variables %s and %s"
+        .format(name, env_usr, env_pass))
       System.exit(-1)
       None
     }

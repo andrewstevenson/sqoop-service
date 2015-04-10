@@ -5,7 +5,7 @@ import com.cloudera.sqoop.SqoopOptions.FileLayout
 import com.datamountaineer.ingestor.evo.DataRepo
 import com.datamountaineer.ingestor.models.{JobMetaStorage, SqoopJob, SqoopJobDAO, SqoopJobSearchParameters}
 import com.datamountaineer.ingestor.rest.Failure
-import com.datamountaineer.ingestor.sqoop.IngestSqoop
+import com.datamountaineer.ingestor.sqoop.{TargetDb, IngestSqoop}
 import com.datamountaineer.ingestor.utils.{AvroUtilsHelper, Constants}
 import org.apache.hadoop.conf.{Configuration, Configured}
 import org.apache.hadoop.util.{Tool, ToolRunner}
@@ -114,6 +114,10 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
       options.setParent(cloned_opts)
     //make sure we use our metastore
     options.getConf.set(Constants.STORAGE_IMPLEMENTATION_KEY, Constants.STORAGE_IMPLEMENTATION_CLASS)
+    val split = job_name.split(":")
+    val target_db = new TargetDb(split(0), split(1), split(2))
+    options.setUsername(target_db.username)
+    options.setPassword(target_db.password)
     val tool = new ImportTool()
     //run the sqoop!!
     val rc = tool.run(options)
