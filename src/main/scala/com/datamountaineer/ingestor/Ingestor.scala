@@ -1,9 +1,12 @@
 package com.datamountaineer.ingestor
 
+import java.io.IOException
+import java.util.Date
+
 import com.cloudera.sqoop.SqoopOptions
 import com.cloudera.sqoop.SqoopOptions.FileLayout
 import com.datamountaineer.ingestor.evo.DataRepo
-import com.datamountaineer.ingestor.models.{JobMetaStorage, SqoopJob, SqoopJobDAO, SqoopJobSearchParameters}
+import com.datamountaineer.ingestor.models._
 import com.datamountaineer.ingestor.rest.Failure
 import com.datamountaineer.ingestor.sqoop.{TargetDb, IngestSqoop}
 import com.datamountaineer.ingestor.utils.{AvroUtilsHelper, Constants}
@@ -12,6 +15,8 @@ import org.apache.hadoop.util.{Tool, ToolRunner}
 import org.apache.sqoop.tool.ImportTool
 import org.kitesdk.data.Datasets
 import org.slf4j.{Logger, LoggerFactory, MDC}
+
+import scala.util.Try
 
 //noinspection ScalaDeprecation
 object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.conf.Configuration {
@@ -27,11 +32,13 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
   }
 
   def main(args: Array[String]) {
-    if (args == null || args.length < 2) {
+    if (args == null || args.length < 1) {
       System.out.println( """
                             |Usage: <sqoop:exec:job <job_name>
                             |Usage: <sqoop:exec:database <database> <batch_size>
                             |Usage: <sqoop:create:job <job_name>
+                            |Usage: <sqoop:list:database> <database>
+                            |Usage: <sqoop:list:job> <job_name>
                           """.stripMargin)
       System.exit(0)
     }
@@ -48,6 +55,10 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
         val job_name = args(1).split(":").take(4) mkString ":"
         log.info("Trying to create job called %s'.".format(job_name))
         process_sqoop(job_name = Some(job_name), run_type = "create", sqoop_options = Some(sqoop_options))
+      case "sqoop:list:database" =>
+        list(Try(args(1).toString).getOrElse(""))
+      case "sqoop:list:job" =>
+        list_jobs(Try(args(1).toString).getOrElse(""))
       case _ => log.error("Bollocks!")
     }
   }
@@ -120,15 +131,93 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
     options.setPassword(target_db.password)
     val tool = new ImportTool()
     //run the sqoop!!
+    val sqoop_log_con = new SqoopLogDAO()
+    val format = new java.text.SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
+
+    //not happy with this
+    val log_entry : Either[Failure, SqoopLog] = sqoop_log_con.create(new SqoopLog(job_name = job_name, sqoop_start_time = format.format(new Date()), sqoop_status = Some("STARTED")))
+    val sqoop_log_entry : Option[SqoopLog] = log_entry match {
+      case Left(failure: Failure) => {
+        log.error("Failed to log for %s. %s".format(job_name, failure.message), new IOException)
+        None
+      }
+      case Right(log_entry: SqoopLog) => Some(log_entry)
+    }
+
     val rc = tool.run(options)
     if (rc.equals(0)) {
       log.info("-----------------------------------------------")
       log.info("Beginning update of Hive repo and load.")
+
+      val sqoop_log = log(sqoop_log_con,"sqoop", job_name, "FINISHED", 0, sqoop_log_entry.get)
+      val kite_log = log(sqoop_log_con,"kite", job_name, "STARTED", 0, sqoop_log)
+
       //merge schema and load kite dataset
-      load_dataset(options)
+      val kite =  load_dataset(options)
+
+      //log kite copy command finished.
+      kite._1 match {
+        case 0 =>
+          log(sqoop_log_con,"kite", job_name, "FINISHED", kite._2, kite_log)
+      }
+
     } else {
+      log(sqoop_log_con,"sqoop", job_name, "ERROR", 0, sqoop_log_entry.get)
       log.error("Sqoop failed!", new UnknownError)
     }
+  }
+
+  //ugly. ugly ugly.
+  def log(conn: SqoopLogDAO, app_type : String, job_name: String, status : String, rec_count: Long, entry: SqoopLog)
+  : SqoopLog = {
+    val format = new java.text.SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
+
+    val sqoop_finish : String = {
+      if (app_type.equals("sqoop") && status.equals("FINISHED")) format.format(new Date())
+      else entry.sqoop_finish_time.get
+    }
+
+    val log_status : String = {
+      if (app_type.equals("sqoop")) status
+      else entry.sqoop_status.get
+    }
+
+    val sqoop_rec_count : Long = {
+      if (app_type.equals("sqoop")) rec_count
+      else entry.sqoop_rec_count.getOrElse(0)
+    }
+
+    val kite_start : String = {
+      if (app_type.equals("kite")  && status.equals("STARTED")) format.format(new Date())
+      else entry.kite_start_time.getOrElse("")
+    }
+
+    val kite_finish :String = {
+      if (app_type.equals("kite")  && status.equals("FINISHED")) format.format(new Date())
+      else entry.kite_finish_time.getOrElse("")
+    }
+
+    val kite_count: Long = {
+      if (app_type.equals("kite")) rec_count
+      else entry.sqoop_rec_count.getOrElse(0)
+    }
+
+    val kite_status : String = {
+      if (app_type.equals("kite")) status
+      else entry.kite_status.getOrElse("")
+    }
+
+    val new_entry = new SqoopLog(job_name = job_name,
+                                  sqoop_start_time = entry.sqoop_start_time,
+                                  sqoop_finish_time = Some(sqoop_finish),
+                                  sqoop_status = Some(log_status),
+                                  sqoop_rec_count = Some(sqoop_rec_count),
+                                  kite_start_time = Some(kite_start) ,
+                                  kite_finish_time = Some(kite_finish),
+                                  kite_rec_count = Some(kite_count),
+                                  kite_status = Some(kite_status))
+
+    conn.update(id = entry.id.get, new_entry).right.get
   }
 
   /**
@@ -136,7 +225,7 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
    *
    * @param options SqoopOptions for the job
    * */
-  def load_dataset(options: SqoopOptions) = {
+  def load_dataset(options: SqoopOptions) : Pair[Int, Long] = {
     val database = options.getJobName.split(":")(2)
     val db_type = options.getJobName.split(":")(0)
     val dataset_name = options.getTableName
@@ -148,18 +237,24 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
       case FileLayout.ParquetFile =>
         val input_dataset = DataRepo.get_dataset(options.getTargetDir)
         input_dataset match {
-          case None => log.warn("No dataset found for %s".format(options.getTargetDir))
+          case None =>
+            log.warn("No dataset found for %s".format(options.getTargetDir))
+            Pair(1,0)
           case _ =>
             val rc = DataRepo.load_dataset(input_dataset = input_dataset.get, target_dataset = dataset, conf = options.getConf)
-            rc match {
+            rc._1 match {
               case 0 =>
                 input_dataset.get.deleteAll()
                 Datasets.delete(input_dataset.get.getUri)
-              case 1 => log.error("Error copying sqoop dataset to target!")
+                rc
+              case 1 =>
+                log.error("Error copying sqoop dataset to target!")
+                Pair(1,0)
             }
-
         }
-      case _ => log.error("Unsupported Sqoop file type: " + options.getFileLayout.toString)
+      case _ =>
+        log.error("Unsupported Sqoop file type: " + options.getFileLayout.toString)
+        Pair(1,0)
     }
   }
 
@@ -186,5 +281,17 @@ object Ingestor extends Configured with Tool with com.datamountaineer.ingestor.c
         execute_job(job_name = job.job_name)
       })
     })
+  }
+
+  def list(database : String) = {
+    val storage = new JobMetaStorage
+    storage.open()
+    storage.list(database)
+  }
+
+  def list_jobs(job_name : String) = {
+    val storage = new JobMetaStorage
+    storage.open()
+    storage.list_job_details(job_name)
   }
 }

@@ -78,12 +78,12 @@ class IngestSqoop(input: String, incr: Boolean) extends Configuration {
 //      this.db_type == Constants.SQL_SERVER) {
 //      sqoop_options.setDirectMode(true)
 //      sqoop_options.setFileLayout(FileLayout.TextFile)
-//      //sqoop_options.setCompressionCodec("com.hadoop.compression.lzo.LzopCodec")
+//      sqoop_options.setCompressionCodec("com.hadoop.compression.lzo.LzopCodec")
 //    }
 //    else {
-//      sqoop_options.setHiveDropDelims(true)
-//      //switch to avro once https://issues.apache.org/jira/browse/SQOOP-2252 is fixed
-//      sqoop_options.setFileLayout(FileLayout.TextFile)
+//
+//      //switch to parquet once https://issues.apache.org/jira/browse/SQOOP-2252 is fixed
+//      sqoop_options.setFileLayout(FileLayout.ParquetFile)
 //      //sqoop_options.setCompressionCodec(Constants.SNAPPY_CODEC)
 //    }
     //ignore direct mode now till can sort out text to parquet via kite

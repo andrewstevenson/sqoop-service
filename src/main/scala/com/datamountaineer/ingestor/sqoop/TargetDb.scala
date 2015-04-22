@@ -24,8 +24,8 @@ class TargetDb (database_type: String, server: String, database: String) extends
 
   def get_env_credentials() : Option[Pair[String, String]] = {
     //check environment variables
-    val env_pass = db_type.toUpperCase + "_" + host.toUpperCase + "_" + name.toUpperCase + "_PASS"
-    val env_usr = db_type.toUpperCase + "_" + host.toUpperCase + "_" + name.toUpperCase + "_USER"
+    val env_pass = db_type.toUpperCase + "_" + host.toUpperCase.replace(".", "_").replace("-", "_") + "_" + name.toUpperCase + "_PASS"
+    val env_usr = db_type.toUpperCase + "_" + host.toUpperCase.replace(".", "_").replace("-", "_") + "_" + name.toUpperCase + "_USER"
     val pass: Option[String] = Some(System.getenv(env_pass))
     val user: Option[String] = Some(System.getenv(env_usr))
 
@@ -56,11 +56,14 @@ class TargetDb (database_type: String, server: String, database: String) extends
             log.error(e.getMessage, new IOException)
             throw e
         }
-//      case "netezza" =>
-//        classOf[org.netezza.Driver].newInstance()
-//        val conn = DriverManager.getConnection("jdbc:netezza://" + host + ":5480/" + name,
-//          username, password)
-//        Some(conn)
+      case "netezza" =>
+        classOf[org.netezza.Driver].newInstance()
+        val conn = DriverManager.getConnection("jdbc:netezza://" + host + ":5480/" + name,
+          username, password)
+        Some(conn)
+      case _ =>
+        log.error("Unsupport database type %s".format(db_type))
+        None
     }
   }
 

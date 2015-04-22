@@ -4,7 +4,7 @@ target_server=$1
 version=$2
 target_dir=$3
 me=$(echo $(whoami) | sed 's/europe\\//g')
-me="root"
+#me="root"
 sqoop_home=/usr/lib/sqoop
 
 rm -f sqoop-service*.tar.gz

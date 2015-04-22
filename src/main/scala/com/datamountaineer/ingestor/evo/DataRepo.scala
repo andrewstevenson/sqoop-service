@@ -9,7 +9,8 @@ import org.apache.hadoop.fs.Path
 import org.kitesdk.cli.Command
 import org.kitesdk.cli.commands.CSVImportCommand
 import org.kitesdk.data._
-import org.kitesdk.data.spi._
+import org.kitesdk.data.spi.{DatasetRepositories, DatasetRepository, SchemaUtil}
+
 import org.kitesdk.tools.CopyTask
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -81,7 +82,7 @@ object DataRepo extends Configured {
 
     if (!Datasets.exists(dataset.getUri)) {
       log.error("Dataset %s not found".format(dataset.getName))
-      exit
+      sys.exit()
       None
     }
     else {
@@ -143,7 +144,7 @@ object DataRepo extends Configured {
    * */
   def load_dataset(input_dataset: Dataset[GenericData.Record],
                    target_dataset : Dataset[GenericData.Record],
-                   conf: Configuration) : Int = {
+                   conf: Configuration) : Pair[Int, Long] = {
     val source: View[GenericData.Record] = input_dataset
     val dest: View[GenericData.Record] = target_dataset
     conf.set("crunch.log.job.progress", "true")
@@ -156,10 +157,10 @@ object DataRepo extends Configured {
 
     if (result.succeeded) {
       log.info("Added {} records to \"{}\"", task.getCount, target_dataset.getUri)
-      return 0
+      Pair(0, task.getCount)
     }
     else {
-      return 1
+      Pair(1,0)
     }
   }
 
@@ -171,7 +172,7 @@ object DataRepo extends Configured {
    * */
   def get_dataset(input_path: String) :  Option[Dataset[GenericData.Record]] = {
       if (Datasets.exists("dataset:hdfs:" + input_path)) {
-        Some(Datasets.load(("dataset:hdfs:" + input_path), classOf[GenericData.Record]).asInstanceOf[Dataset[GenericData.Record]])
+        Some(Datasets.load("dataset:hdfs:" + input_path, classOf[GenericData.Record]).asInstanceOf[Dataset[GenericData.Record]])
       } else {
         None
       }

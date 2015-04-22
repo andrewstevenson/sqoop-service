@@ -9,6 +9,8 @@ import com.cloudera.sqoop.metastore.{JobData, JobStorage}
 import com.cloudera.sqoop.tool.SqoopTool
 import com.datamountaineer.ingestor.rest.Failure
 import com.datamountaineer.ingestor.utils.Constants
+import net.liftweb.json.DefaultFormats
+import net.liftweb.json.Serialization.write
 import org.slf4j.{Logger, LoggerFactory}
 
 //import org.apache.commons.logging.{Log, LogFactory}
@@ -67,14 +69,15 @@ class JobMetaStorage() extends JobStorage  {
     job._2 match {
       case false =>
         log.warn("Job " + job_name + " does not exist!")
-        exit(1)
+        sys.exit(1)
         null
       case true =>
         //create search parameters for DAO
         val props = conn_props.search(SqoopJobPropParameters(job_name = Some(job_name)))
         //match on the return. Can either be Failure or a List of SqoopJobProps
         props match {
-          case Left(failure: Failure) => log.error("Failed to find properties for %s.".format(job_name), new IOException)
+          case Left(failure: Failure) => log.error("Failed to find properties for %s. %s".format(job_name,
+            failure.message), new IOException)
             null
           case Right(props: List[SqoopJobProp]) =>
             val tool_name = Some(props.filter(
@@ -341,7 +344,7 @@ class JobMetaStorage() extends JobStorage  {
   }
 
   /**
-   * Returns a list of jobs store in the metastore
+   * Returns a list of jobs store in the metastore. Used by sqoop
    * */
   @throws(classOf[IOException])
   def list() : util.List[String] = {
@@ -356,6 +359,57 @@ class JobMetaStorage() extends JobStorage  {
         log.warn("Some when wrong! %s".format(failure.message))
         val empty = list()
         empty
+    }
+  }
+
+  /**
+   * Returns a list of jobs store in the metastore
+   * */
+  @throws(classOf[IOException])
+  def list(database: String) = {
+    val search_param = {
+      if (database.isEmpty || database.equals(""))
+        new SqoopJobSearchParameters()
+      else
+        new SqoopJobSearchParameters(database=Some(database))
+    }
+    val jobs = conn_jobs.search(search_param)
+    jobs match {
+      case Right(jobs: List[SqoopJob]) =>
+        if (jobs.size == 0) {
+          log.warn("No jobs found for database: %s!".format(database))
+        }
+        implicit val formats = DefaultFormats
+        jobs.foreach( job => {
+          val json = write(job)
+          println(json)
+        })
+
+      case Left(failure: Failure) =>
+        log.warn("Some when wrong! %s".format(failure.message))
+    }
+  }
+
+  /**
+   * Returns a list of jobs store in the metastore
+   * */
+  @throws(classOf[IOException])
+  def list_job_details(job_name: String) = {
+    val search_param = new SqoopJobPropParameters(job_name = Some(job_name))
+    val jobs = conn_props.search(search_param)
+    jobs match {
+      case Right(jobs: List[SqoopJobProp]) =>
+        if (jobs.size == 0) {
+          log.warn("No job found for job name: %s!".format(job_name))
+        }
+        implicit val formats = DefaultFormats
+        jobs.foreach( job => {
+          val json = write(job)
+          println(json)
+        })
+
+      case Left(failure: Failure) =>
+        log.warn("Some when wrong! %s".format(failure.message))
     }
   }
 }

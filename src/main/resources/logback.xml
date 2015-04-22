@@ -25,7 +25,7 @@
         </discriminator>
         <sift>
             <appender name="FILE-${loggerFileName}" class="ch.qos.logback.core.FileAppender">
-                <File>/tmp/${loggerFileName}_${bySecond}.log</File>
+                <File>/logs/${loggerFileName}_${bySecond}.log</File>
                 <Append>false</Append>
                 <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
                     <layout class="com.datamountaineer.ingestor.utils.CustomLogLayout" />
@@ -39,7 +39,7 @@
     <logger name="scala.slick" level="INFO"/>
     <logger name="com.datamountaineer" level="INFO"/>
     <root level="INFO">
-        <!--<appender-ref ref="SIFT" />-->
+        <appender-ref ref="SIFT" />
         <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>

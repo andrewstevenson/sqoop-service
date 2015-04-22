@@ -7,3 +7,5 @@ case class SqoopJobSearchParameters( job_name: Option[String] = None,
                                   enabled : Option[Boolean] = None)
 
 case class SqoopJobPropParameters( job_name: Option[String] = None, prop_name: Option[String] = None)
+
+case class SqoopLogParameters( job_name: Option[String] = None, status: Option[String] = None)
